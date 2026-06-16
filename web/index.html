@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SysTrace</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#1a1a2e;color:#e8e8e8;font-family:'Consolas','Menlo','Courier New',monospace;font-size:14px;min-height:100vh}
+#app{max-width:1400px;margin:0 auto;padding:20px}
+header{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid #2a2a4a;margin-bottom:16px}
+header h1{font-family:'Segoe UI','Helvetica Neue',Arial,sans-serif;font-size:24px;color:#e8e8e8}
+header h1 span{color:#e94560}
+.realtime{display:flex;gap:20px;font-size:13px}
+.realtime .metric{display:flex;align-items:center;gap:6px}
+.realtime .metric .dot{width:8px;height:8px;border-radius:50%}
+.realtime .metric .dot.cpu{background:#4ecdc4}
+.realtime .metric .dot.mem{background:#ffe66d}
+.realtime .metric .value{font-weight:bold;font-size:15px}
+.section{margin-bottom:20px}
+.section-title{font-size:13px;color:#a0a0a0;margin-bottom:8px;text-transform:uppercase;letter-spacing:1px}
+.heatmap-container{position:relative;background:#16213e;border-radius:8px;padding:16px;overflow:hidden}
+canvas#heatmap{width:100%;height:160px;display:block;cursor:crosshair}
+.tooltip{position:fixed;background:#0f3460;border:1px solid #2a2a4a;border-radius:6px;padding:10px 14px;font-size:12px;pointer-events:none;z-index:1000;display:none;box-shadow:0 4px 12px rgba(0,0,0,0.4)}
+.tooltip .tt-time{color:#4ecdc4;margin-bottom:4px;font-weight:bold}
+.legend{display:flex;gap:16px;margin-top:10px;font-size:12px;color:#a0a0a0}
+.legend-item{display:flex;align-items:center;gap:4px}
+.legend-item .swatch{width:12px;height:12px;border-radius:2px}
+.metric-tabs{display:flex;gap:8px;margin-bottom:10px}
+.metric-tab{padding:6px 14px;border:1px solid #2a2a4a;border-radius:4px;cursor:pointer;font-size:12px;background:transparent;color:#a0a0a0;transition:all .2s}
+.metric-tab:hover{border-color:#4ecdc4;color:#e8e8e8}
+.metric-tab.active{background:#0f3460;border-color:#4ecdc4;color:#4ecdc4}
+.detail-container{background:#16213e;border-radius:8px;padding:16px}
+.snapshot-info{margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid #2a2a4a}
+.snapshot-info .time-label{font-size:18px;font-weight:bold;margin-bottom:6px}
+.snapshot-info .sys-stats{display:flex;gap:24px;font-size:13px}
+.snapshot-info .sys-stats .stat-label{color:#a0a0a0}
+.snapshot-info .sys-stats .stat-value{font-weight:bold}
+.no-snapshot{text-align:center;color:#a0a0a0;padding:40px;font-size:14px}
+table.process-table{width:100%;border-collapse:collapse}
+table.process-table th{background:#0f3460;padding:8px 12px;text-align:left;cursor:pointer;user-select:none;font-size:12px;color:#e8e8e8;position:sticky;top:0}
+table.process-table th:hover{background:#1a3a70}
+table.process-table th .sort-arrow{margin-left:4px;font-size:10px;opacity:0.5}
+table.process-table th.sorted .sort-arrow{opacity:1;color:#4ecdc4}
+table.process-table td{padding:6px 12px;border-bottom:1px solid #2a2a4a;font-size:13px}
+table.process-table tr:hover{background:#1a1a3e}
+table.process-table tr.spike-cpu{background:rgba(233,69,96,0.12)}
+table.process-table tr.spike-cpu:hover{background:rgba(233,69,96,0.2)}
+table.process-table tr.spike-mem{background:rgba(255,165,0,0.12)}
+table.process-table tr.spike-mem:hover{background:rgba(255,165,0,0.2)}
+.badge{font-size:10px;padding:2px 6px;border-radius:3px;margin-left:6px}
+.badge.cpu-spike{background:rgba(233,69,96,0.3);color:#e94560}
+.badge.mem-spike{background:rgba(255,165,0,0.3);color:orange}
+.table-scroll{max-height:400px;overflow-y:auto}
+.loading{text-align:center;padding:20px;color:#a0a0a0}
+.error-box{background:rgba(233,69,96,0.15);border:1px solid #e94560;border-radius:6px;padding:12px 16px;margin-bottom:12px;color:#e94560;font-size:13px}
+</style>
+</head>
+<body>
+<div id="app">
+<header>
+  <h1>Sys<span>Trace</span></h1>
+  <div class="realtime" id="realtime">
+    <div class="metric"><div class="dot cpu"></div>CPU: <span class="value" id="rt-cpu">--</span>%</div>
+    <div class="metric"><div class="dot mem"></div>MEM: <span class="value" id="rt-mem">--</span>%</div>
+  </div>
+</header>
+
+<div class="section">
+  <div class="metric-tabs" id="metric-tabs">
+    <button class="metric-tab active" data-metric="cpu">CPU</button>
+    <button class="metric-tab" data-metric="mem">Memory</button>
+    <button class="metric-tab" data-metric="dr">Disk Read</button>
+    <button class="metric-tab" data-metric="dw">Disk Write</button>
+  </div>
+  <div class="heatmap-container">
+    <canvas id="heatmap"></canvas>
+    <div class="tooltip" id="tooltip">
+      <div class="tt-time" id="tt-time"></div>
+      <div id="tt-body"></div>
+    </div>
+    <div class="legend">
+      <div class="legend-item"><div class="swatch" style="background:hsl(120,80%,50%)"></div>Low (0-25%)</div>
+      <div class="legend-item"><div class="swatch" style="background:hsl(60,80%,50%)"></div>Mid (25-50%)</div>
+      <div class="legend-item"><div class="swatch" style="background:hsl(30,80%,50%)"></div>High (50-75%)</div>
+      <div class="legend-item"><div class="swatch" style="background:hsl(0,80%,50%)"></div>Extreme (75-100%)</div>
+      <div class="legend-item"><div class="swatch" style="background:hsl(0,0%,30%)"></div>N/A</div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="detail-container" id="detail-container">
+    <div class="no-snapshot" id="no-snapshot">Click on the heatmap above to view process details at that moment</div>
+    <div id="snapshot-content" style="display:none">
+      <div class="snapshot-info">
+        <div class="time-label" id="snap-time"></div>
+        <div class="sys-stats">
+          <span><span class="stat-label">CPU:</span> <span class="stat-value" id="snap-cpu"></span></span>
+          <span><span class="stat-label">Memory:</span> <span class="stat-value" id="snap-mem"></span></span>
+          <span><span class="stat-label">Disk Read:</span> <span class="stat-value" id="snap-dr"></span></span>
+          <span><span class="stat-label">Disk Write:</span> <span class="stat-value" id="snap-dw"></span></span>
+        </div>
+      </div>
+      <div class="table-scroll">
+        <table class="process-table">
+          <thead>
+            <tr>
+              <th data-sort="cpu">CPU% <span class="sort-arrow">&#9660;</span></th>
+              <th data-sort="mem">Memory(MB) <span class="sort-arrow">&#9650;</span></th>
+              <th data-sort="pid">PID <span class="sort-arrow">&#9650;</span></th>
+              <th>Name</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="process-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="loading" id="snap-loading" style="display:none">Loading...</div>
+    <div class="error-box" id="snap-error" style="display:none"></div>
+  </div>
+</div>
+</div>
+
+<script>
+(function(){
+    // --- Configuration ---
+    const API_BASE = '';
+
+    // --- State ---
+    let heatmapData = [];
+    let currentMetric = 'cpu';
+    let lastTimestamp = 0;
+    let prevSnapshot = null;
+    let sortKey = 'cpu';
+    let sortDesc = true;
+    let currentSnapshotData = null;
+    const canvas = document.getElementById('heatmap');
+    const ctx = canvas.getContext('2d');
+    const tooltip = document.getElementById('tooltip');
+
+    // --- Metric helpers ---
+    function metricValue(d) {
+        if (currentMetric === 'cpu') return d.cpu;
+        if (currentMetric === 'mem') return d.mem;
+        if (currentMetric === 'dr') return d.dr;
+        if (currentMetric === 'dw') return d.dw;
+        return d.cpu;
+    }
+
+    function metricLabel(v) {
+        if (v < 0) return 'N/A';
+        if (currentMetric === 'dr' || currentMetric === 'dw') {
+            if (v < 1024) return v.toFixed(0) + ' B/s';
+            if (v < 1048576) return (v/1024).toFixed(1) + ' KB/s';
+            return (v/1048576).toFixed(1) + ' MB/s';
+        }
+        return v.toFixed(1) + '%';
+    }
+
+    // --- Color mapping: value -> HSL color (green=low to red=high) ---
+    function metricColor(v) {
+        if (v < 0) return 'hsl(0,0%,30%)';
+        const maxVal = (currentMetric === 'cpu' || currentMetric === 'mem') ? 100 : 104857600;
+        const pct = Math.min(v / maxVal, 1.0) * 100;
+        const h = Math.round(120 * (1 - pct / 100));
+        return 'hsl(' + h + ',80%,50%)';
+    }
+
+    // --- Calculate heatmap downsample step based on canvas width ---
+    function calculateStep() {
+        const w = Math.max(canvas.clientWidth - 80, 100);
+        let step = Math.ceil(86400 / w);
+        step = Math.ceil(step / 5) * 5;
+        return Math.max(step, 1);
+    }
+
+    // --- Draw heatmap on canvas ---
+    function drawHeatmap() {
+        const dpr = window.devicePixelRatio || 1;
+        const cw = canvas.clientWidth;
+        const ch = canvas.clientHeight;
+        canvas.width = cw * dpr;
+        canvas.height = ch * dpr;
+        ctx.scale(dpr, dpr);
+
+        const ml = 10, mr = 10, mt = 10, mb = 30;
+        const dw = cw - ml - mr;
+        const dh = ch - mt - mb;
+
+        ctx.fillStyle = '#1a1a2e';
+        ctx.fillRect(0, 0, cw, ch);
+
+        if (heatmapData.length === 0) {
+            ctx.fillStyle = '#a0a0a0';
+            ctx.font = '14px Consolas, monospace';
+            ctx.textAlign = 'center';
+            ctx.fillText('Waiting for data...', cw / 2, ch / 2);
+            return;
+        }
+
+        const bw = dw / heatmapData.length;
+        for (let i = 0; i < heatmapData.length; i++) {
+            const x = ml + i * bw;
+            const v = metricValue(heatmapData[i]);
+            ctx.fillStyle = metricColor(v);
+            ctx.fillRect(x, mt, Math.max(bw, 1), dh);
+        }
+
+        // Time axis labels
+        ctx.fillStyle = '#a0a0a0';
+        ctx.font = '10px Consolas, monospace';
+        ctx.textAlign = 'center';
+        const labelCount = Math.min(24, Math.floor(dw / 60));
+        const labelStep = Math.max(1, Math.floor(heatmapData.length / labelCount));
+        for (let i = 0; i < heatmapData.length; i += labelStep) {
+            const x = ml + i * bw + bw / 2;
+            const d = new Date(heatmapData[i].t * 1000);
+            const label = String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+            ctx.fillText(label, x, ch - 6);
+        }
+        // "Now" label
+        if (heatmapData.length > 0) {
+            const x = ml + (heatmapData.length - 1) * bw + bw / 2;
+            ctx.fillStyle = '#4ecdc4';
+            ctx.fillText('Now', x, ch - 6);
+        }
+    }
+
+    // --- Tooltip on hover ---
+    function showTooltip(e) {
+        if (heatmapData.length === 0) { tooltip.style.display = 'none'; return; }
+        const rect = canvas.getBoundingClientRect();
+        const mx = e.clientX - rect.left;
+        const cw = canvas.clientWidth;
+        const ml = 10, mr = 10;
+        const dw = cw - ml - mr;
+        const bw = dw / heatmapData.length;
+        const idx = Math.floor((mx - ml) / bw);
+        if (idx < 0 || idx >= heatmapData.length) { tooltip.style.display = 'none'; return; }
+        const d = heatmapData[idx];
+        const dt = new Date(d.t * 1000);
+        document.getElementById('tt-time').textContent = dt.toLocaleString();
+        const cpuV = d.cpu >= 0 ? d.cpu.toFixed(1) + '%' : 'N/A';
+        const memV = d.mem >= 0 ? d.mem.toFixed(1) + '%' : 'N/A';
+        const drV = metricLabel(d.dr);
+        const dwV = metricLabel(d.dw);
+        document.getElementById('tt-body').innerHTML =
+            'CPU: ' + cpuV + '<br>MEM: ' + memV + '<br>Disk R: ' + drV + '<br>Disk W: ' + dwV;
+        tooltip.style.display = 'block';
+        tooltip.style.left = (e.clientX + 14) + 'px';
+        tooltip.style.top = (e.clientY + 14) + 'px';
+    }
+
+    canvas.addEventListener('mousemove', showTooltip);
+    canvas.addEventListener('mouseleave', function() { tooltip.style.display = 'none'; });
+
+    // --- Click on heatmap to load process snapshot ---
+    canvas.addEventListener('click', function(e) {
+        if (heatmapData.length === 0) return;
+        const rect = canvas.getBoundingClientRect();
+        const mx = e.clientX - rect.left;
+        const cw = canvas.clientWidth;
+        const ml = 10, mr = 10;
+        const dw = cw - ml - mr;
+        const bw = dw / heatmapData.length;
+        const idx = Math.floor((mx - ml) / bw);
+        if (idx < 0 || idx >= heatmapData.length) return;
+        const t = heatmapData[idx].t;
+        loadSnapshot(t);
+    });
+
+    // --- Data fetching functions ---
+    async function loadHeatmap() {
+        try {
+            const step = calculateStep();
+            const resp = await fetch(API_BASE + '/api/heatmap?step=' + step);
+            if (!resp.ok) return;
+            const json = await resp.json();
+            heatmapData = json.data || [];
+            if (heatmapData.length > 0) {
+                lastTimestamp = heatmapData[heatmapData.length - 1].t;
+            }
+            drawHeatmap();
+        } catch(e) {}
+    }
+
+    // --- Incremental update: fetch new data since last timestamp ---
+    async function incrementalUpdate() {
+        if (lastTimestamp === 0) return;
+        try {
+            const resp = await fetch(API_BASE + '/api/heatmap?from=' + (lastTimestamp + 1) + '&step=1');
+            if (!resp.ok) return;
+            const json = await resp.json();
+            const newData = json.data || [];
+            if (newData.length > 0) {
+                heatmapData.push(...newData);
+                const cutoff = Math.floor(Date.now() / 1000) - 86400;
+                heatmapData = heatmapData.filter(d => d.t >= cutoff);
+                lastTimestamp = heatmapData[heatmapData.length - 1].t;
+                drawHeatmap();
+            }
+        } catch(e) {}
+    }
+
+    // --- Load process snapshot for a given timestamp ---
+    async function loadSnapshot(t) {
+        const loading = document.getElementById('snap-loading');
+        const error = document.getElementById('snap-error');
+        const content = document.getElementById('snapshot-content');
+        const noSnap = document.getElementById('no-snapshot');
+        loading.style.display = 'block';
+        error.style.display = 'none';
+        content.style.display = 'none';
+        noSnap.style.display = 'none';
+
+        try {
+            const resp = await fetch(API_BASE + '/api/snapshot?time=' + t);
+            if (!resp.ok) {
+                const err = await resp.json();
+                error.textContent = err.message || 'Failed to load snapshot';
+                error.style.display = 'block';
+                loading.style.display = 'none';
+                return;
+            }
+            const json = await resp.json();
+            renderSnapshot(json, t);
+            loading.style.display = 'none';
+        } catch(e) {
+            error.textContent = 'Network error';
+            error.style.display = 'block';
+            loading.style.display = 'none';
+        }
+    }
+
+    // --- Render snapshot data into the detail panel ---
+    function renderSnapshot(data, reqTime) {
+        const content = document.getElementById('snapshot-content');
+        content.style.display = 'block';
+
+        const dt = new Date(data.timestamp * 1000);
+        document.getElementById('snap-time').textContent = dt.toLocaleString();
+        document.getElementById('snap-cpu').textContent = data.system.cpu >= 0 ? data.system.cpu.toFixed(1) + '%' : 'N/A';
+        document.getElementById('snap-mem').textContent = data.system.mem >= 0 ? data.system.mem.toFixed(1) + '%' : 'N/A';
+        document.getElementById('snap-dr').textContent = data.system.disk_read_bps >= 0 ? formatBytes(data.system.disk_read_bps) + '/s' : 'N/A';
+        document.getElementById('snap-dw').textContent = data.system.disk_write_bps >= 0 ? formatBytes(data.system.disk_write_bps) + '/s' : 'N/A';
+
+        currentSnapshotData = data.processes;
+        if (data.meta && data.meta.delta_seconds > 0) {
+            document.getElementById('snap-time').textContent += ' (actual: ' + data.meta.delta_seconds + 's earlier)';
+        }
+
+        renderTable();
+    }
+
+    function formatBytes(b) {
+        if (b < 1024) return b.toFixed(0) + ' B';
+        if (b < 1048576) return (b/1024).toFixed(1) + ' KB';
+        return (b/1048576).toFixed(1) + ' MB';
+    }
+
+    // --- Render process table with spike highlighting ---
+    function renderTable() {
+        if (!currentSnapshotData) return;
+        const tbody = document.getElementById('process-tbody');
+        let procs = [...currentSnapshotData];
+
+        // Detect spikes against previous snapshot
+        procs.sort((a, b) => {
+            if (sortKey === 'cpu') return sortDesc ? b.cpu - a.cpu : a.cpu - b.cpu;
+            if (sortKey === 'mem') return sortDesc ? b.mem - a.mem : a.mem - b.mem;
+            return sortDesc ? b.pid - a.pid : a.pid - b.pid;
+        });
+
+        let html = '';
+        for (const p of procs) {
+            let spikeClass = '';
+            let badge = '';
+            if (prevSnapshot) {
+                const prev = prevSnapshot.find(pp => pp.pid === p.pid);
+                if (prev) {
+                    const cpuDelta = p.cpu - prev.cpu;
+                    const memDelta = p.mem - prev.mem;
+                    if (cpuDelta > 10) { spikeClass = 'spike-cpu'; badge += '<span class="badge cpu-spike">CPU +' + cpuDelta.toFixed(1) + '%</span>'; }
+                    if (memDelta > 50) { spikeClass = 'spike-mem'; badge += '<span class="badge mem-spike">MEM +' + memDelta.toFixed(0) + 'MB</span>'; }
+                }
+            }
+            html += '<tr class="' + spikeClass + '">' +
+                '<td>' + p.cpu.toFixed(1) + '%</td>' +
+                '<td>' + p.mem.toFixed(1) + '</td>' +
+                '<td>' + p.pid + '</td>' +
+                '<td>' + escapeHtml(p.name) + '</td>' +
+                '<td>' + badge + '</td></tr>';
+        }
+        tbody.innerHTML = html;
+    }
+
+    function escapeHtml(s) {
+        return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    // --- Metric tab switching ---
+    document.getElementById('metric-tabs').addEventListener('click', function(e) {
+        if (!e.target.classList.contains('metric-tab')) return;
+        document.querySelectorAll('.metric-tab').forEach(t => t.classList.remove('active'));
+        e.target.classList.add('active');
+        currentMetric = e.target.dataset.metric;
+        drawHeatmap();
+    });
+
+    // --- Table column sorting ---
+    document.querySelectorAll('.process-table th[data-sort]').forEach(th => {
+        th.addEventListener('click', function() {
+            const key = this.dataset.sort;
+            if (sortKey === key) { sortDesc = !sortDesc; }
+            else { sortKey = key; sortDesc = (key === 'cpu' || key === 'mem'); }
+            document.querySelectorAll('.process-table th').forEach(t => t.classList.remove('sorted'));
+            this.classList.add('sorted');
+            this.querySelector('.sort-arrow').innerHTML = sortDesc ? '&#9660;' : '&#9650;';
+            renderTable();
+        });
+    });
+
+    // --- Poll /api/status for realtime CPU/mem display in header ---
+    async function updateRealtime() {
+        try {
+            const resp = await fetch(API_BASE + '/api/status');
+            if (!resp.ok) return;
+            const s = await resp.json();
+            if (heatmapData.length > 0) {
+                const last = heatmapData[heatmapData.length - 1];
+                document.getElementById('rt-cpu').textContent = last.cpu >= 0 ? last.cpu.toFixed(1) : '--';
+                document.getElementById('rt-mem').textContent = last.mem >= 0 ? last.mem.toFixed(1) : '--';
+            }
+        } catch(e) {}
+    }
+
+    // --- Initialize: load heatmap, start periodic updates ---
+    async function init() {
+        await loadHeatmap();
+        setInterval(incrementalUpdate, 5000);
+        setInterval(updateRealtime, 2000);
+        updateRealtime();
+    }
+
+    window.addEventListener('resize', function() { drawHeatmap(); });
+    init();
+})();
+</script>
+</body>
+</html>
