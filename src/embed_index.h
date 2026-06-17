@@ -904,12 +904,10 @@ table.process-table td.name-cell{font-weight:500;max-width:280px;overflow:hidden
             }
 
             const idx = findNearestIdxInData(t);
-            if (idx < 0) return;
 
-            selectedIdx = idx;
+            selectedIdx = (idx >= 0) ? idx : 0;
             canvas.focus();
-            const vd = getVisibleData();
-            loadSnapshot(vd[idx].t);
+            loadSnapshot(t);
             drawHeatmap();
 
             document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
@@ -926,7 +924,7 @@ table.process-table td.name-cell{font-weight:500;max-width:280px;overflow:hidden
 
         const fullFrom = heatmapData.length > 0 ? heatmapData[0].t : 0;
         const fullTo = heatmapData.length > 0 ? heatmapData[heatmapData.length - 1].t : 0;
-        if (t < fullFrom || t > fullTo) {
+        if (t > fullTo && fullTo > 0) {
             timeInput.classList.add('input-error');
             setTimeout(() => timeInput.classList.remove('input-error'), 2000);
             return;
@@ -941,12 +939,9 @@ table.process-table td.name-cell{font-weight:500;max-width:280px;overflow:hidden
         }
 
         const idx = findNearestIdxInData(t);
-        if (idx < 0) return;
-
-        selectedIdx = idx;
+        selectedIdx = (idx >= 0) ? idx : 0;
         canvas.focus();
-        const vd = getVisibleData();
-        loadSnapshot(vd[idx].t);
+        loadSnapshot(t);
         drawHeatmap();
     }
 
