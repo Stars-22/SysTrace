@@ -3,6 +3,18 @@
 #include <cstdio>
 #include <cstdlib>
 #include <string>
+#include <windows.h>
+
+static SysTraceServer* g_server = nullptr;
+
+static BOOL WINAPI console_ctrl_handler(DWORD ctrl_type) {
+    if (ctrl_type == CTRL_C_EVENT || ctrl_type == CTRL_BREAK_EVENT || ctrl_type == CTRL_CLOSE_EVENT) {
+        fprintf(stderr, "\n[SysTrace] Shutting down...\n");
+        if (g_server) g_server->stop();
+        return TRUE;
+    }
+    return FALSE;
+}
 
 struct Config {
     int port = 26616;
@@ -81,13 +93,18 @@ int main(int argc, char* argv[]) {
     srv_cfg.max_processes = cfg.max_processes;
 
     SysTraceServer server(srv_cfg);
+    g_server = &server;
+    SetConsoleCtrlHandler(console_ctrl_handler, TRUE);
 
     fprintf(stderr, "[SysTrace] Starting... Port=%d Interval=%dms\n", cfg.port, cfg.interval_ms);
 
     if (!server.start()) {
         fprintf(stderr, "[SysTrace] Failed to start server\n");
+        g_server = nullptr;
         return 1;
     }
 
+    g_server = nullptr;
+    fprintf(stderr, "[SysTrace] Stopped.\n");
     return 0;
 }
