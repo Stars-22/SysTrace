@@ -409,12 +409,15 @@ table.process-table td.name-cell{font-weight:500;max-width:280px;overflow:hidden
 
     function metricLabel(v) {
         if (v < 0) return 'N/A';
-        if (currentMetric === 'dr' || currentMetric === 'dw') {
-            if (v < 1024) return v.toFixed(0) + ' B/s';
-            if (v < 1048576) return (v/1024).toFixed(1) + ' KB/s';
-            return (v/1048576).toFixed(2) + ' MB/s';
-        }
+        if (currentMetric === 'dr' || currentMetric === 'dw') return diskLabel(v);
         return v.toFixed(1) + '%';
+    }
+
+    function diskLabel(v) {
+        if (v < 0) return 'N/A';
+        if (v < 1024) return v.toFixed(0) + ' B/s';
+        if (v < 1048576) return (v/1024).toFixed(1) + ' KB/s';
+        return (v/1048576).toFixed(2) + ' MB/s';
     }
 
     function metricColor(v) {
@@ -676,8 +679,8 @@ table.process-table td.name-cell{font-weight:500;max-width:280px;overflow:hidden
         html += '<div class="tt-bar-wrap"><div class="tt-bar" style="width:' + cpuPct + '%;background:' + cpuColor + '"></div></div></div>';
         html += '<div class="tt-row"><span class="tt-label">MEM</span><span class="tt-val" style="color:' + memColor + '">' + (memV >= 0 ? memV.toFixed(1) + '%' : 'N/A') + '</span>';
         html += '<div class="tt-bar-wrap"><div class="tt-bar" style="width:' + memPct + '%;background:' + memColor + '"></div></div></div>';
-        html += '<div class="tt-row"><span class="tt-label">Disk R</span><span class="tt-val">' + metricLabel(d.dr) + '</span></div>';
-        html += '<div class="tt-row"><span class="tt-label">Disk W</span><span class="tt-val">' + metricLabel(d.dw) + '</span></div>';
+        html += '<div class="tt-row"><span class="tt-label">Disk R</span><span class="tt-val">' + diskLabel(d.dr) + '</span></div>';
+        html += '<div class="tt-row"><span class="tt-label">Disk W</span><span class="tt-val">' + diskLabel(d.dw) + '</span></div>';
 
         tooltip.innerHTML = html;
         tooltip.style.display = 'block';
