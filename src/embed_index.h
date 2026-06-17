@@ -368,7 +368,7 @@ table.process-table td.name-cell{font-weight:500;max-width:280px;overflow:hidden
                 <th data-sort="mem">Memory <span class="sort-arrow">&#9650;</span></th>
                 <th data-sort="pid">PID <span class="sort-arrow">&#9650;</span></th>
                 <th>Name</th>
-                <th style="width:100px">Status</th>
+                <th style="min-width:160px">Status</th>
               </tr>
             </thead>
             <tbody id="process-tbody"></tbody>
