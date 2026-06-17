@@ -10,163 +10,187 @@ constexpr const char* INDEX_HTML = R"rawliteral(<!DOCTYPE html>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SysTrace</title>
 <style>
-:root {
-    --bg-primary: #0f0e17;
-    --bg-secondary: #1a1a2e;
-    --bg-card: #16213e;
-    --bg-card-hover: #1c2847;
-    --bg-surface: #0f3460;
-    --border: #2a2a4a;
-    --border-light: #3a3a5c;
-    --text-primary: #e8e8e8;
-    --text-secondary: #a0a0b8;
-    --text-muted: #6c6c8a;
-    --accent: #4ecdc4;
-    --accent-glow: rgba(78,205,196,0.25);
-    --brand: #e94560;
-    --brand-glow: rgba(233,69,96,0.3);
-    --cpu-blue: #4ecdc4;
-    --mem-green: #ffe66d;
-    --disk-orange: #ff9f43;
-    --spike-red: #e94560;
-    --spike-orange: #ff9f43;
-}
+:root{--bg-primary:#0f0e17;--bg-secondary:#1a1a2e;--bg-card:#16213e;--bg-card-hover:#1c2847;--bg-surface:#0f3460;--border:#2a2a4a;--border-light:#3a3a5c;--text-primary:#e8e8e8;--text-secondary:#a0a0b8;--text-muted:#6c6c8a;--accent:#4ecdc4;--accent-glow:rgba(78,205,196,.25);--brand:#e94560;--brand-glow:rgba(233,69,96,.3);--cpu-blue:#4ecdc4;--mem-green:#ffe66d;--disk-orange:#ff9f43;--disk-purple:#a855f7;--spike-red:#e94560;--spike-orange:#ff9f43;--row-even:#141428;--row-odd:#191930}
 *{margin:0;padding:0;box-sizing:border-box}
-body{background:var(--bg-primary);color:var(--text-primary);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Helvetica Neue',Arial,sans-serif;font-size:14px;min-height:100vh;overflow-x:hidden}
-#app{max-width:1440px;margin:0 auto;padding:24px 28px 40px}
+body{background:var(--bg-primary);background-image:radial-gradient(ellipse at 50% 0%,#1a1a3e 0%,transparent 70%);color:var(--text-primary);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Helvetica Neue',Arial,sans-serif;font-size:14px;min-height:100vh;overflow-x:hidden}
+#app{max-width:1440px;margin:0 auto;padding:24px 28px 20px}
 
 /* ====== Header ====== */
-header{display:flex;justify-content:space-between;align-items:center;padding:16px 24px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:12px;margin-bottom:24px;position:relative;overflow:hidden}
-header::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent),var(--brand),#a855f7,var(--accent));background-size:200% 100%;animation:gradientShift 4s ease infinite}
+header{display:flex;justify-content:space-between;align-items:center;padding:16px 24px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:14px;margin-bottom:24px;position:relative;overflow:hidden;backdrop-filter:blur(8px)}
+header::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent),var(--brand),var(--disk-purple),var(--accent));background-size:200% 100%;animation:gradientShift 4s ease infinite}
+header::after{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 20% 50%,rgba(78,205,196,.03) 0%,transparent 60%);pointer-events:none}
 @keyframes gradientShift{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
-.logo{display:flex;align-items:center;gap:12px}
-.logo-icon{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--bg-surface),#1a3a70);display:flex;align-items:center;justify-content:center;position:relative;box-shadow:0 2px 12px var(--accent-glow)}
-.logo-icon .pulse{width:10px;height:10px;border-radius:50%;background:var(--accent);animation:pulse 2s ease-in-out infinite;position:relative}
+.logo{display:flex;align-items:center;gap:12px;z-index:1}
+.logo-icon{width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,var(--bg-surface) 0%,#1a3a70 100%);display:flex;align-items:center;justify-content:center;position:relative;box-shadow:0 0 16px var(--accent-glow),0 0 4px rgba(78,205,196,.15)}
+.logo-icon .pulse{width:10px;height:10px;border-radius:50%;background:var(--accent);animation:pulse 2s ease-in-out infinite;position:relative;box-shadow:0 0 8px var(--accent)}
 .logo-icon .pulse::after{content:'';position:absolute;inset:-4px;border-radius:50%;border:2px solid var(--accent);opacity:0;animation:pulseRing 2s ease-in-out infinite}
-@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.7;transform:scale(.85)}}
-@keyframes pulseRing{0%{transform:scale(.8);opacity:.6}100%{transform:scale(1.5);opacity:0}}
-header h1{font-size:22px;font-weight:700;color:var(--text-primary);letter-spacing:-0.5px}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.6;transform:scale(.8)}}
+@keyframes pulseRing{0%{transform:scale(.7);opacity:.8}100%{transform:scale(1.8);opacity:0}}
+header h1{font-size:22px;font-weight:700;color:var(--text-primary);letter-spacing:-0.5px;text-shadow:0 0 20px rgba(232,232,232,.05)}
 header h1 span{color:var(--brand);font-weight:800}
-.realtime-cards{display:flex;gap:12px}
-.rt-card{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:10px 18px;display:flex;align-items:center;gap:14px;min-width:140px;transition:border-color .3s,box-shadow .3s}
-.rt-card:hover{border-color:var(--border-light);box-shadow:0 2px 16px rgba(0,0,0,.3)}
-.rt-card .rt-icon{width:38px;height:38px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;flex-shrink:0}
-.rt-card.cpu-card .rt-icon{background:rgba(78,205,196,.15);color:var(--cpu-blue)}
-.rt-card.mem-card .rt-icon{background:rgba(255,230,109,.15);color:var(--mem-green)}
-.rt-card .rt-body{display:flex;flex-direction:column}
-.rt-card .rt-label{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);line-height:1}
-.rt-card .rt-value{font-size:22px;font-weight:700;line-height:1.2;font-variant-numeric:tabular-nums;color:var(--text-primary);transition:color .3s}
+.realtime-cards{display:flex;gap:12px;z-index:1}
+.rt-card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:10px 18px;display:flex;align-items:center;gap:14px;min-width:148px;transition:all .25s ease;position:relative;overflow:hidden}
+.rt-card::after{content:'';position:absolute;top:0;left:0;bottom:0;width:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.02));transition:width .3s ease}
+.rt-card:hover{border-color:var(--border-light);box-shadow:0 4px 20px rgba(0,0,0,.3),0 0 0 1px var(--border-light)}
+.rt-card:hover::after{width:100%}
+.rt-card:active{transform:scale(.98)}
+.rt-card .rt-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0;position:relative}
+.rt-card.cpu-card .rt-icon{background:rgba(78,205,196,.12);color:var(--cpu-blue);box-shadow:inset 0 0 12px rgba(78,205,196,.08)}
+.rt-card.mem-card .rt-icon{background:rgba(255,230,109,.12);color:var(--mem-green);box-shadow:inset 0 0 12px rgba(255,230,109,.08)}
+.rt-card .rt-body{display:flex;flex-direction:column;min-width:60px}
+.rt-card .rt-label{font-size:10px;text-transform:uppercase;letter-spacing:1.2px;color:var(--text-muted);line-height:1}
+.rt-card .rt-value{font-size:24px;font-weight:700;line-height:1.15;font-variant-numeric:tabular-nums;color:var(--text-primary);transition:color .3s,text-shadow .3s}
+.rt-card .rt-value.warn{color:#ff9f43;text-shadow:0 0 12px rgba(255,159,67,.3)}
+.rt-card .rt-value.danger{color:#f87171;text-shadow:0 0 12px rgba(248,113,113,.3)}
+.rt-card .rt-mini{height:3px;border-radius:2px;margin-top:4px;background:var(--border);overflow:hidden}
+.rt-card .rt-mini .rt-fill{height:100%;border-radius:2px;transition:width .5s ease}
+.rt-card.cpu-card .rt-fill{background:linear-gradient(90deg,#4ecdc4,#38b2ac)}
+.rt-card.mem-card .rt-fill{background:linear-gradient(90deg,#ffe66d,#fbbf24)}
 
 /* ====== Metric Tabs ====== */
 .section{margin-bottom:20px}
 .section-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
-.section-title{font-size:15px;font-weight:600;color:var(--text-secondary);display:flex;align-items:center;gap:8px}
-.section-title svg{width:16px;height:16px;opacity:.7}
-.metric-tabs{display:flex;gap:4px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:8px;padding:3px}
-.metric-tab{padding:6px 16px;border:none;border-radius:6px;cursor:pointer;font-size:12px;font-weight:500;background:transparent;color:var(--text-muted);transition:all .25s ease;font-family:inherit}
-.metric-tab:hover{color:var(--text-primary);background:rgba(255,255,255,.05)}
-.metric-tab.active{background:var(--bg-surface);color:var(--accent);box-shadow:0 1px 6px rgba(78,205,196,.2)}
+.section-title{font-size:14px;font-weight:600;color:var(--text-secondary);display:flex;align-items:center;gap:8px;letter-spacing:.3px}
+.section-title svg{width:15px;height:15px;opacity:.6}
+.metric-tabs{display:flex;gap:4px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:10px;padding:3px}
+.metric-tab{padding:7px 18px;border:none;border-radius:8px;cursor:pointer;font-size:12px;font-weight:500;background:transparent;color:var(--text-muted);transition:all .2s ease;font-family:inherit;position:relative}
+.metric-tab:hover{color:var(--text-primary);background:rgba(255,255,255,.04)}
+.metric-tab.active{background:linear-gradient(135deg,rgba(78,205,196,.15),rgba(78,205,196,.08));color:var(--accent);box-shadow:0 1px 8px rgba(78,205,196,.15)}
+.metric-tab:active{transform:scale(.96)}
 
 /* ====== Heatmap Container ====== */
-.heatmap-container{position:relative;background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:20px 20px 14px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.2)}
-.heatmap-container::after{content:'';position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 2px 8px rgba(0,0,0,.4);border-radius:12px}
-canvas#heatmap{width:100%;height:180px;display:block;cursor:crosshair;border-radius:6px}
+.heatmap-container{position:relative;background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:20px 20px 14px;overflow:hidden;box-shadow:0 4px 28px rgba(0,0,0,.25),0 0 0 1px rgba(255,255,255,.02) inset}
+.heatmap-container::before{content:'';position:absolute;top:-1px;left:20px;right:20px;height:1px;background:linear-gradient(90deg,transparent,rgba(78,205,196,.2),transparent)}
+.heatmap-container::after{content:'';position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 2px 10px rgba(0,0,0,.4);border-radius:14px}
+canvas#heatmap{width:100%;height:180px;display:block;cursor:crosshair;border-radius:8px}
+
+/* ====== Crosshair ====== */
+.crosshair{position:absolute;pointer-events:none;z-index:3;display:none}
+.crosshair-v{position:absolute;top:8px;bottom:38px;width:1px;background:rgba(255,255,255,.18);pointer-events:none;z-index:3;display:none;filter:drop-shadow(0 0 2px rgba(255,255,255,.3))}
+.crosshair-v::before{content:'';position:absolute;top:0;left:-3px;width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.6);box-shadow:0 0 6px rgba(255,255,255,.4)}
+.crosshair-h{position:absolute;left:8px;right:8px;height:1px;background:rgba(255,255,255,.06);pointer-events:none;z-index:2;display:none}
 
 /* ====== Skeleton Loading ====== */
-.skeleton-overlay{position:absolute;inset:20px 20px 14px;border-radius:6px;overflow:hidden;pointer-events:none;z-index:2;display:flex;flex-direction:column;gap:8px;padding:12px}
+.skeleton-overlay{position:absolute;inset:20px 20px 14px;border-radius:8px;overflow:hidden;pointer-events:none;z-index:2;display:flex;flex-direction:column;gap:6px;padding:12px 0}
 .skeleton-overlay.hidden{display:none}
-.skel-bar{height:8px;border-radius:4px;background:linear-gradient(90deg,#1e2140 25%,#2a2d50 50%,#1e2140 75%);background-size:200% 100%;animation:shimmer 1.5s ease-in-out infinite;opacity:.6}
-.skel-bar:nth-child(1){width:70%;animation-delay:0s}
-.skel-bar:nth-child(2){width:100%;animation-delay:.15s}
-.skel-bar:nth-child(3){width:85%;animation-delay:.3s}
-.skel-bar:nth-child(4){width:60%;animation-delay:.45s}
+.skel-bar{height:6px;border-radius:3px;background:linear-gradient(90deg,#1e2140 25%,#2a2d55 50%,#1e2140 75%);background-size:200% 100%;animation:shimmer 1.8s ease-in-out infinite;opacity:.5}
+.skel-bar:nth-child(1){width:60%;animation-delay:0s}
+.skel-bar:nth-child(2){width:100%;animation-delay:.2s}
+.skel-bar:nth-child(3){width:80%;animation-delay:.4s}
+.skel-bar:nth-child(4){width:45%;animation-delay:.6s}
+.skel-bar:nth-child(5){width:90%;animation-delay:.25s}
+.skel-bar:nth-child(6){width:70%;animation-delay:.45s}
 @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
 
 /* ====== Tooltip ====== */
-.tooltip{position:fixed;background:var(--bg-primary);border:1px solid var(--border-light);border-radius:10px;padding:14px 16px;font-size:12px;pointer-events:none;z-index:1000;display:none;box-shadow:0 8px 32px rgba(0,0,0,.5);min-width:180px;backdrop-filter:blur(8px)}
-.tooltip .tt-time{color:var(--accent);font-size:13px;font-weight:700;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--border)}
-.tt-row{display:flex;justify-content:space-between;align-items:center;padding:3px 0}
-.tt-row .tt-label{color:var(--text-muted);font-size:11px}
-.tt-row .tt-val{font-weight:600;font-variant-numeric:tabular-nums}
-.tt-bar-wrap{height:3px;background:var(--border);border-radius:2px;margin-top:2px;flex:0 0 60px;margin-left:8px;overflow:hidden}
+.tooltip{position:fixed;background:rgba(15,14,23,.95);border:1px solid var(--border-light);border-radius:12px;padding:16px 18px;font-size:12px;pointer-events:none;z-index:1000;display:none;box-shadow:0 12px 40px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.05);min-width:200px;backdrop-filter:blur(16px)}
+.tooltip::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent),var(--brand));border-radius:12px 12px 0 0}
+.tooltip .tt-time{color:var(--accent);font-size:13px;font-weight:700;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid rgba(255,255,255,.08)}
+.tt-row{display:flex;justify-content:space-between;align-items:center;padding:4px 0}
+.tt-row .tt-label{color:var(--text-muted);font-size:11px;letter-spacing:.3px}
+.tt-row .tt-val{font-weight:600;font-variant-numeric:tabular-nums;color:var(--text-primary)}
+.tt-bar-wrap{height:3px;background:var(--border);border-radius:2px;margin-top:1px;flex:0 0 70px;margin-left:8px;overflow:hidden}
 .tt-bar{height:100%;border-radius:2px;transition:width .2s ease}
 
 /* ====== Legend ====== */
-.legend{display:flex;gap:16px;margin-top:12px;font-size:11px;color:var(--text-muted);justify-content:center}
+.legend{display:flex;gap:20px;margin-top:14px;font-size:11px;color:var(--text-muted);justify-content:center;align-items:center}
 .legend-item{display:flex;align-items:center;gap:5px}
-.legend-item .swatch{width:14px;height:10px;border-radius:2px}
+.legend-item .swatch{width:16px;height:8px;border-radius:2px;box-shadow:0 0 4px rgba(0,0,0,.3)}
 
 /* ====== Detail Container ====== */
-.detail-container{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:24px;box-shadow:0 4px 24px rgba(0,0,0,.2)}
-.no-snapshot{text-align:center;color:var(--text-muted);padding:48px 20px;font-size:14px}
-.no-snapshot .ns-icon{font-size:40px;margin-bottom:12px;opacity:.4;display:block}
+.detail-container{background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:24px;box-shadow:0 4px 28px rgba(0,0,0,.2)}
+.no-snapshot{text-align:center;padding:56px 20px}
+.no-snapshot .ns-box{display:inline-block;background:var(--bg-secondary);border:1px dashed var(--border-light);border-radius:16px;padding:32px 40px;margin-bottom:8px}
+.no-snapshot .ns-icon{font-size:36px;margin-bottom:8px;display:block;opacity:.3}
+.no-snapshot .ns-text{color:var(--text-muted);font-size:14px}
+.no-snapshot .ns-hint{color:var(--text-muted);font-size:12px;margin-top:8px;opacity:.6}
 
 /* ====== Snapshot Info ====== */
 .snapshot-info{margin-bottom:20px}
-.snap-header{display:flex;align-items:center;gap:10px;margin-bottom:14px}
-.snap-header .clock-icon{width:32px;height:32px;border-radius:8px;background:var(--bg-surface);display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.snap-header .clock-icon svg{width:18px;height:18px;stroke:var(--accent);fill:none;stroke-width:2}
-.snap-time{font-size:18px;font-weight:700}
-.snap-time-sub{font-size:11px;color:var(--text-muted);margin-left:8px}
-.sys-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
-.stat-card{background:var(--bg-secondary);border:1px solid var(--border);border-radius:8px;padding:10px 14px;display:flex;align-items:center;gap:10px}
-.stat-card .sc-icon{width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0}
-.stat-card.cpu-card .sc-icon{background:rgba(78,205,196,.15);color:var(--cpu-blue)}
-.stat-card.mem-card .sc-icon{background:rgba(255,230,109,.15);color:var(--mem-green)}
-.stat-card.dr-card .sc-icon{background:rgba(255,159,67,.15);color:var(--disk-orange)}
-.stat-card.dw-card .sc-icon{background:rgba(168,85,247,.15);color:#a855f7}
-.stat-card .sc-body{display:flex;flex-direction:column}
-.stat-card .sc-label{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted)}
-.stat-card .sc-value{font-size:15px;font-weight:700;font-variant-numeric:tabular-nums}
+.snap-header{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.snap-header .clock-icon{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--bg-surface),#1a3a70);display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 2px 8px rgba(78,205,196,.1)}
+.snap-header .clock-icon svg{width:18px;height:18px;stroke:var(--accent);fill:none;stroke-width:2;stroke-linecap:round}
+.snap-time{font-size:19px;font-weight:700;letter-spacing:-0.3px}
+.snap-time-sub{font-size:11px;color:var(--text-muted);margin-left:8px;font-weight:400}
+.sys-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.stat-card{background:var(--bg-secondary);border:1px solid var(--border);border-radius:10px;padding:12px 16px;display:flex;align-items:center;gap:12px;transition:border-color .2s,box-shadow .2s;position:relative;overflow:hidden}
+.stat-card:hover{border-color:var(--border-light);box-shadow:0 2px 12px rgba(0,0,0,.2)}
+.stat-card .sc-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0}
+.stat-card.cpu-card .sc-icon{background:rgba(78,205,196,.12);color:var(--cpu-blue)}
+.stat-card.mem-card .sc-icon{background:rgba(255,230,109,.12);color:var(--mem-green)}
+.stat-card.dr-card .sc-icon{background:rgba(255,159,67,.12);color:var(--disk-orange)}
+.stat-card.dw-card .sc-icon{background:rgba(168,85,247,.12);color:var(--disk-purple)}
+.stat-card .sc-body{display:flex;flex-direction:column;min-width:0}
+.stat-card .sc-label{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);line-height:1.2}
+.stat-card .sc-value{font-size:16px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.3;transition:color .3s}
+.stat-card .sc-bar{height:3px;background:var(--border);border-radius:2px;margin-top:5px;overflow:hidden}
+.stat-card .sc-bar-fill{height:100%;border-radius:2px;transition:width .5s ease}
+.stat-card.cpu-card .sc-bar-fill{background:linear-gradient(90deg,#4ecdc4,#38b2ac)}
+.stat-card.mem-card .sc-bar-fill{background:linear-gradient(90deg,#ffe66d,#fbbf24)}
+.stat-card.dr-card .sc-bar-fill{background:linear-gradient(90deg,#ff9f43,#fb923c)}
+.stat-card.dw-card .sc-bar-fill{background:linear-gradient(90deg,#a855f7,#9333ea)}
 
 /* ====== Process Table ====== */
-.table-wrap{border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-top:4px}
-.table-scroll{max-height:420px;overflow-y:auto;overflow-x:auto}
-.table-scroll::-webkit-scrollbar{width:6px}
+.table-wrap{border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-top:4px}
+.table-scroll{max-height:440px;overflow-y:auto;overflow-x:auto}
+.table-scroll::-webkit-scrollbar{width:5px;height:5px}
 .table-scroll::-webkit-scrollbar-track{background:var(--bg-secondary)}
 .table-scroll::-webkit-scrollbar-thumb{background:var(--border-light);border-radius:3px}
+.table-scroll::-webkit-scrollbar-thumb:hover{background:#555}
 table.process-table{width:100%;border-collapse:collapse}
-table.process-table th{background:var(--bg-surface);padding:10px 14px;text-align:left;cursor:pointer;user-select:none;font-size:11px;font-weight:600;color:var(--text-secondary);position:sticky;top:0;z-index:1;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border)}
+table.process-table th{background:var(--bg-surface);padding:11px 14px;text-align:left;cursor:pointer;user-select:none;font-size:10px;font-weight:600;color:var(--text-secondary);position:sticky;top:0;z-index:1;text-transform:uppercase;letter-spacing:.6px;border-bottom:1px solid var(--border);transition:background .15s}
+table.process-table th:first-child{border-radius:0}
+table.process-table th:last-child{border-radius:0}
 table.process-table th:hover{background:#1a3a70}
-table.process-table th .sort-arrow{margin-left:4px;font-size:9px;opacity:.4;transition:opacity .2s}
+table.process-table th .sort-arrow{margin-left:4px;font-size:9px;opacity:.3;transition:opacity .2s}
 table.process-table th.sorted .sort-arrow{opacity:1;color:var(--accent)}
-table.process-table td{padding:9px 14px;border-bottom:1px solid rgba(42,42,74,.5);font-size:13px;transition:background .15s}
-table.process-table tbody tr{transition:background .15s,border-left .15s}
-table.process-table tbody tr:hover{background:var(--bg-card-hover)}
-table.process-table tbody tr.spike-cpu{background:rgba(233,69,96,.08);border-left:3px solid var(--spike-red)}
-table.process-table tbody tr.spike-cpu:hover{background:rgba(233,69,96,.15)}
-table.process-table tbody tr.spike-mem{background:rgba(255,159,67,.08);border-left:3px solid var(--spike-orange)}
-table.process-table tbody tr.spike-mem:hover{background:rgba(255,159,67,.15)}
-table.process-table td.pid-cell{color:var(--text-muted);font-size:11px;font-family:'Consolas','Menlo',monospace}
+table.process-table td{padding:10px 14px;border-bottom:1px solid rgba(42,42,74,.4);font-size:13px;transition:background .12s}
+table.process-table tbody tr{transition:all .15s ease}
+table.process-table tbody tr:nth-child(even){background:var(--row-even)}
+table.process-table tbody tr:nth-child(odd){background:var(--row-odd)}
+table.process-table tbody tr:hover{background:var(--bg-card-hover)!important}
+table.process-table tbody tr.spike-cpu{background:rgba(233,69,96,.06);border-left:3px solid var(--spike-red)}
+table.process-table tbody tr.spike-cpu:hover{background:rgba(233,69,96,.12)!important}
+table.process-table tbody tr.spike-mem{background:rgba(255,159,67,.06);border-left:3px solid var(--spike-orange)}
+table.process-table tbody tr.spike-mem:hover{background:rgba(255,159,67,.12)!important}
+table.process-table td.pid-cell{color:var(--text-muted);font-size:11px;font-family:'SF Mono','Consolas','Menlo',monospace}
 table.process-table td.name-cell{font-weight:500;max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.cpu-bar-wrap{display:inline-flex;align-items:center;gap:8px;min-width:120px}
-.cpu-bar{display:inline-block;height:6px;border-radius:3px;min-width:2px;transition:width .3s ease}
-.cpu-bar.low{background:var(--cpu-blue)}
-.cpu-bar.mid{background:var(--mem-green)}
-.cpu-bar.high{background:var(--spike-orange)}
-.cpu-bar.extreme{background:var(--spike-red)}
-.cpu-val{font-variant-numeric:tabular-nums;font-weight:600;min-width:42px}
-.badge{font-size:10px;font-weight:600;padding:2px 7px;border-radius:4px;margin-left:4px;letter-spacing:.3px}
-.badge.cpu-spike{background:rgba(233,69,96,.2);color:#f87171;border:1px solid rgba(233,69,96,.3)}
-.badge.mem-spike{background:rgba(255,159,67,.2);color:#fbbf24;border:1px solid rgba(255,159,67,.3)}
-.loading{text-align:center;padding:40px;color:var(--text-muted)}
-.loading .spinner{width:28px;height:28px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 12px}
+.cpu-bar-wrap{display:inline-flex;align-items:center;gap:8px;min-width:130px}
+.cpu-bar-track{flex:1;height:5px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden;position:relative}
+.cpu-bar{display:block;height:100%;border-radius:3px;min-width:2px;transition:width .4s ease}
+.cpu-bar.low{background:linear-gradient(90deg,#4ecdc4,#38b2ac)}
+.cpu-bar.mid{background:linear-gradient(90deg,#ffe66d,#fbbf24)}
+.cpu-bar.high{background:linear-gradient(90deg,#ff9f43,#fb923c)}
+.cpu-bar.extreme{background:linear-gradient(90deg,#e94560,#f87171)}
+.cpu-val{font-variant-numeric:tabular-nums;font-weight:600;min-width:42px;text-align:right}
+.badge{font-size:10px;font-weight:600;padding:2px 8px;border-radius:5px;margin-left:4px;letter-spacing:.2px;white-space:nowrap}
+.badge.cpu-spike{background:rgba(233,69,96,.15);color:#f87171;border:1px solid rgba(233,69,96,.25)}
+.badge.mem-spike{background:rgba(255,159,67,.15);color:#fbbf24;border:1px solid rgba(255,159,67,.25)}
+.loading{text-align:center;padding:48px;color:var(--text-muted)}
+.loading .spinner{width:28px;height:28px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 14px}
+.loading .spinner-text{font-size:13px;opacity:.7}
 @keyframes spin{to{transform:rotate(360deg)}}
-.error-box{background:rgba(233,69,96,.1);border:1px solid rgba(233,69,96,.3);border-radius:8px;padding:12px 16px;color:#f87171;font-size:13px;display:flex;align-items:center;gap:8px}
-.error-box svg{flex-shrink:0}
+.error-box{background:rgba(233,69,96,.08);border:1px solid rgba(233,69,96,.25);border-radius:10px;padding:14px 18px;color:#f87171;font-size:13px;display:flex;align-items:center;gap:10px}
+.error-box svg{flex-shrink:0;width:18px;height:18px}
 
-/* ====== Fade-in Animation ====== */
-.fade-in{animation:fadeIn .35s ease}
-@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+/* ====== Animations ====== */
+.fade-in{animation:fadeIn .4s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+/* ====== Footer ====== */
+.footer{text-align:center;padding:28px 0 8px;font-size:11px;color:var(--text-muted);letter-spacing:.3px;opacity:.5}
+.footer a{color:var(--text-muted);text-decoration:none;transition:color .2s}
+.footer a:hover{color:var(--accent)}
 
 /* ====== Responsive ====== */
 @media(max-width:768px){
-    #app{padding:12px}
-    header{flex-direction:column;gap:12px;padding:14px}
+    #app{padding:12px 14px 24px}
+    header{flex-direction:column;gap:12px;padding:14px 16px}
     .realtime-cards{width:100%}
     .rt-card{min-width:0;flex:1;padding:8px 12px}
-    .rt-card .rt-value{font-size:18px}
+    .rt-card .rt-value{font-size:20px}
     .sys-stats{grid-template-columns:1fr 1fr}
+    .section-header{flex-direction:column;gap:8px;align-items:flex-start}
 }
 </style>
 </head>
@@ -183,6 +207,7 @@ table.process-table td.name-cell{font-weight:500;max-width:280px;overflow:hidden
       <div class="rt-body">
         <div class="rt-label">CPU</div>
         <div class="rt-value" id="rt-cpu">--</div>
+        <div class="rt-mini"><div class="rt-fill" id="rt-cpu-fill" style="width:0%"></div></div>
       </div>
     </div>
     <div class="rt-card mem-card">
@@ -190,6 +215,7 @@ table.process-table td.name-cell{font-weight:500;max-width:280px;overflow:hidden
       <div class="rt-body">
         <div class="rt-label">MEM</div>
         <div class="rt-value" id="rt-mem">--</div>
+        <div class="rt-mini"><div class="rt-fill" id="rt-mem-fill" style="width:0%"></div></div>
       </div>
     </div>
   </div>
@@ -210,29 +236,31 @@ table.process-table td.name-cell{font-weight:500;max-width:280px;overflow:hidden
   </div>
   <div class="heatmap-container">
     <div class="skeleton-overlay" id="skeleton">
-      <div class="skel-bar"></div>
-      <div class="skel-bar"></div>
-      <div class="skel-bar"></div>
-      <div class="skel-bar"></div>
+      <div class="skel-bar"></div><div class="skel-bar"></div><div class="skel-bar"></div><div class="skel-bar"></div><div class="skel-bar"></div><div class="skel-bar"></div>
     </div>
     <canvas id="heatmap"></canvas>
-    <div class="tooltip" id="tooltip">
-      <div class="tt-time" id="tt-time"></div>
-      <div id="tt-body"></div>
-    </div>
+    <div class="crosshair-v" id="crosshair-v"></div>
+    <div class="crosshair-h" id="crosshair-h"></div>
+    <div class="tooltip" id="tooltip"></div>
     <div class="legend">
-      <div class="legend-item"><div class="swatch" style="background:hsl(120,80%,50%)"></div>Low</div>
-      <div class="legend-item"><div class="swatch" style="background:hsl(60,80%,50%)"></div>Medium</div>
-      <div class="legend-item"><div class="swatch" style="background:hsl(30,80%,50%)"></div>High</div>
-      <div class="legend-item"><div class="swatch" style="background:hsl(0,80%,50%)"></div>Extreme</div>
-      <div class="legend-item"><div class="swatch" style="background:hsl(0,0%,25%)"></div>N/A</div>
+      <div class="legend-item"><div class="swatch" style="background:linear-gradient(90deg,#4ecdc4,#38b2ac)"></div>Low</div>
+      <div class="legend-item"><div class="swatch" style="background:linear-gradient(90deg,#ffe66d,#fbbf24)"></div>Medium</div>
+      <div class="legend-item"><div class="swatch" style="background:linear-gradient(90deg,#ff9f43,#fb923c)"></div>High</div>
+      <div class="legend-item"><div class="swatch" style="background:linear-gradient(90deg,#e94560,#f87171)"></div>Extreme</div>
+      <div class="legend-item"><div class="swatch" style="background:#2a2a3a"></div>N/A</div>
     </div>
   </div>
 </div>
 
 <div class="section">
   <div class="detail-container" id="detail-container">
-    <div class="no-snapshot" id="no-snapshot"><span class="ns-icon">&#128433;</span>Click on the heatmap above to view process details</div>
+    <div class="no-snapshot" id="no-snapshot">
+      <div class="ns-box">
+        <div class="ns-icon">&#128202;</div>
+        <div class="ns-text">Click on the heatmap to view process details</div>
+        <div class="ns-hint">Select any time point to drill down</div>
+      </div>
+    </div>
     <div id="snapshot-content" style="display:none" class="fade-in">
       <div class="snapshot-info">
         <div class="snap-header">
@@ -244,10 +272,22 @@ table.process-table td.name-cell{font-weight:500;max-width:280px;overflow:hidden
           </div>
         </div>
         <div class="sys-stats">
-          <div class="stat-card cpu-card"><div class="sc-icon">C</div><div class="sc-body"><div class="sc-label">CPU</div><div class="sc-value" id="snap-cpu"></div></div></div>
-          <div class="stat-card mem-card"><div class="sc-icon">M</div><div class="sc-body"><div class="sc-label">Memory</div><div class="sc-value" id="snap-mem"></div></div></div>
-          <div class="stat-card dr-card"><div class="sc-icon">R</div><div class="sc-body"><div class="sc-label">Disk Read</div><div class="sc-value" id="snap-dr"></div></div></div>
-          <div class="stat-card dw-card"><div class="sc-icon">W</div><div class="sc-body"><div class="sc-label">Disk Write</div><div class="sc-value" id="snap-dw"></div></div></div>
+          <div class="stat-card cpu-card">
+            <div class="sc-icon">C</div>
+            <div class="sc-body"><div class="sc-label">CPU</div><div class="sc-value" id="snap-cpu"></div><div class="sc-bar"><div class="sc-bar-fill" id="snap-cpu-bar"></div></div></div>
+          </div>
+          <div class="stat-card mem-card">
+            <div class="sc-icon">M</div>
+            <div class="sc-body"><div class="sc-label">Memory</div><div class="sc-value" id="snap-mem"></div><div class="sc-bar"><div class="sc-bar-fill" id="snap-mem-bar"></div></div></div>
+          </div>
+          <div class="stat-card dr-card">
+            <div class="sc-icon">R</div>
+            <div class="sc-body"><div class="sc-label">Disk Read</div><div class="sc-value" id="snap-dr"></div></div>
+          </div>
+          <div class="stat-card dw-card">
+            <div class="sc-icon">W</div>
+            <div class="sc-body"><div class="sc-label">Disk Write</div><div class="sc-value" id="snap-dw"></div></div>
+          </div>
         </div>
       </div>
       <div class="table-wrap">
@@ -259,7 +299,7 @@ table.process-table td.name-cell{font-weight:500;max-width:280px;overflow:hidden
                 <th data-sort="mem">Memory <span class="sort-arrow">&#9650;</span></th>
                 <th data-sort="pid">PID <span class="sort-arrow">&#9650;</span></th>
                 <th>Name</th>
-                <th>Status</th>
+                <th style="width:100px">Status</th>
               </tr>
             </thead>
             <tbody id="process-tbody"></tbody>
@@ -267,18 +307,20 @@ table.process-table td.name-cell{font-weight:500;max-width:280px;overflow:hidden
         </div>
       </div>
     </div>
-    <div class="loading" id="snap-loading" style="display:none"><div class="spinner"></div>Loading...</div>
-    <div class="error-box" id="snap-error" style="display:none"></div>
+    <div class="loading" id="snap-loading" style="display:none"><div class="spinner"></div><div class="spinner-text">Loading snapshot...</div></div>
+    <div class="error-box" id="snap-error" style="display:none">
+      <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+      <span id="error-text"></span>
+    </div>
   </div>
 </div>
+
+<div class="footer">SysTrace v1.0 &middot; Monitoring your system, effortlessly</div>
 </div>
 
 <script>
 (function(){
-    // --- Configuration ---
     const API_BASE = '';
-
-    // --- State ---
     let heatmapData = [];
     let currentMetric = 'cpu';
     let lastTimestamp = 0;
@@ -286,10 +328,12 @@ table.process-table td.name-cell{font-weight:500;max-width:280px;overflow:hidden
     let sortKey = 'cpu';
     let sortDesc = true;
     let currentSnapshotData = null;
-    let dataLoaded = false;
+    let hoveredIdx = -1;
     const canvas = document.getElementById('heatmap');
     const ctx = canvas.getContext('2d');
     const tooltip = document.getElementById('tooltip');
+    const crosshairV = document.getElementById('crosshair-v');
+    const crosshairH = document.getElementById('crosshair-h');
 
     // --- Metric helpers ---
     function metricValue(d) {
@@ -305,18 +349,19 @@ table.process-table td.name-cell{font-weight:500;max-width:280px;overflow:hidden
         if (currentMetric === 'dr' || currentMetric === 'dw') {
             if (v < 1024) return v.toFixed(0) + ' B/s';
             if (v < 1048576) return (v/1024).toFixed(1) + ' KB/s';
-            return (v/1048576).toFixed(1) + ' MB/s';
+            return (v/1048576).toFixed(2) + ' MB/s';
         }
         return v.toFixed(1) + '%';
     }
 
-    // --- Color mapping: value -> HSL color (green=low to red=high) ---
     function metricColor(v) {
-        if (v < 0) return 'hsl(0,0%,25%)';
+        if (v < 0) return 'hsl(0,0%,22%)';
         const maxVal = (currentMetric === 'cpu' || currentMetric === 'mem') ? 100 : 104857600;
         const pct = Math.min(v / maxVal, 1.0) * 100;
         const h = Math.round(120 * (1 - pct / 100));
-        return 'hsl(' + h + ',75%,48%)';
+        const s = 70 + pct * 0.3;
+        const l = 35 + pct * 0.2;
+        return 'hsl(' + h + ',' + s + '%,' + l + '%)';
     }
 
     function cpuBarClass(v) {
@@ -343,13 +388,13 @@ table.process-table td.name-cell{font-weight:500;max-width:280px;overflow:hidden
         canvas.height = ch * dpr;
         ctx.scale(dpr, dpr);
 
-        const ml = 8, mr = 8, mt = 8, mb = 28;
+        const ml = 10, mr = 10, mt = 10, mb = 30;
         const dw = cw - ml - mr;
         const dh = ch - mt - mb;
 
-        // Background with subtle gradient
+        // Background
         const bgGrad = ctx.createLinearGradient(0, 0, 0, ch);
-        bgGrad.addColorStop(0, '#12122a');
+        bgGrad.addColorStop(0, '#14132a');
         bgGrad.addColorStop(1, '#0a0a18');
         ctx.fillStyle = bgGrad;
         ctx.fillRect(0, 0, cw, ch);
@@ -360,6 +405,7 @@ table.process-table td.name-cell{font-weight:500;max-width:280px;overflow:hidden
         ctx.roundRect(ml, mt, dw, dh, 4);
         ctx.clip();
 
+        // Fill heatmap background
         ctx.fillStyle = '#0d0d1a';
         ctx.fillRect(ml, mt, dw, dh);
 
@@ -373,81 +419,126 @@ table.process-table td.name-cell{font-weight:500;max-width:280px;overflow:hidden
         }
 
         const bw = dw / heatmapData.length;
+
+        // Highlight hovered column
+        if (hoveredIdx >= 0 && hoveredIdx < heatmapData.length) {
+            ctx.fillStyle = 'rgba(255,255,255,0.03)';
+            ctx.fillRect(ml + hoveredIdx * bw, mt, bw, dh);
+        }
+
+        // Draw heatmap blocks
         for (let i = 0; i < heatmapData.length; i++) {
             const x = ml + i * bw;
             const v = metricValue(heatmapData[i]);
             ctx.fillStyle = metricColor(v);
             ctx.fillRect(x, mt, Math.max(bw + 0.5, 1), dh);
         }
+
+        // Hover highlight column
+        if (hoveredIdx >= 0 && hoveredIdx < heatmapData.length) {
+            ctx.fillStyle = 'rgba(255,255,255,0.06)';
+            ctx.fillRect(ml + hoveredIdx * bw, mt, Math.max(bw + 0.5, 1), dh);
+        }
+
+        // Subtle top highlight line
+        const lineGrad = ctx.createLinearGradient(ml, 0, ml + dw, 0);
+        lineGrad.addColorStop(0, 'rgba(78,205,196,0)');
+        lineGrad.addColorStop(0.5, 'rgba(78,205,196,0.15)');
+        lineGrad.addColorStop(1, 'rgba(78,205,196,0)');
+        ctx.strokeStyle = lineGrad;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(ml, mt);
+        ctx.lineTo(ml + dw, mt);
+        ctx.stroke();
+
         ctx.restore();
 
         // Time axis labels
         ctx.fillStyle = '#5a5a7a';
         ctx.font = '10px -apple-system, BlinkMacSystemFont, sans-serif';
         ctx.textAlign = 'center';
-        const labelCount = Math.min(24, Math.floor(dw / 70));
+        const labelCount = Math.min(20, Math.floor(dw / 70));
         const labelStep = Math.max(1, Math.floor(heatmapData.length / labelCount));
         for (let i = 0; i < heatmapData.length; i += labelStep) {
             const x = ml + i * bw + bw / 2;
             const d = new Date(heatmapData[i].t * 1000);
             const label = String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
-            ctx.fillText(label, x, ch - 5);
+            ctx.fillText(label, x, ch - 6);
         }
+        // "Now" label
         if (heatmapData.length > 0) {
             const x = ml + (heatmapData.length - 1) * bw + bw / 2;
-            ctx.fillStyle = 'var(--accent)';
             ctx.font = 'bold 10px -apple-system, BlinkMacSystemFont, sans-serif';
             ctx.fillStyle = '#4ecdc4';
-            ctx.fillText('Now', x, ch - 5);
+            ctx.fillText('Now', x, ch - 6);
         }
     }
 
-    // --- Tooltip on hover ---
+    // --- Tooltip and crosshair on hover ---
     function showTooltip(e) {
-        if (heatmapData.length === 0) { tooltip.style.display = 'none'; return; }
+        if (heatmapData.length === 0) { tooltip.style.display = 'none'; crosshairV.style.display = 'none'; return; }
         const rect = canvas.getBoundingClientRect();
         const mx = e.clientX - rect.left;
+        const my = e.clientY - rect.top;
         const cw = canvas.clientWidth;
-        const ml = 8, mr = 8;
+        const ml = 10, mr = 10;
         const dw = cw - ml - mr;
         const bw = dw / heatmapData.length;
         const idx = Math.floor((mx - ml) / bw);
-        if (idx < 0 || idx >= heatmapData.length) { tooltip.style.display = 'none'; return; }
+        if (idx < 0 || idx >= heatmapData.length) {
+            tooltip.style.display = 'none';
+            crosshairV.style.display = 'none';
+            return;
+        }
+
+        hoveredIdx = idx;
+        drawHeatmap();
+
+        // Position crosshair
+        crosshairV.style.display = 'block';
+        const blockX = ml + idx * bw + bw / 2;
+        crosshairV.style.left = (rect.left + blockX) + 'px';
+        crosshairV.style.top = (rect.top + 10) + 'px';
+        crosshairV.style.height = '140px';
+
         const d = heatmapData[idx];
         const dt = new Date(d.t * 1000);
-
-        // Build tooltip content with mini bars
         const cpuV = d.cpu >= 0 ? d.cpu : -1;
         const memV = d.mem >= 0 ? d.mem : -1;
         const cpuPct = cpuV >= 0 ? Math.min(cpuV, 100) : 0;
         const memPct = memV >= 0 ? Math.min(memV, 100) : 0;
+        const cpuColor = cpuV >= 0 ? (cpuV > 75 ? '#f87171' : cpuV > 50 ? '#ff9f43' : '#4ecdc4') : '#6c6c8a';
+        const memColor = memV >= 0 ? (memV > 80 ? '#f87171' : '#ffe66d') : '#6c6c8a';
 
-        let body = '';
-        body += '<div class="tt-time">' + dt.toLocaleString() + '</div>';
-        body += '<div class="tt-row"><span class="tt-label">CPU</span><span class="tt-val">' + (cpuV >= 0 ? cpuV.toFixed(1) + '%' : 'N/A') + '</span>';
-        body += '<div class="tt-bar-wrap"><div class="tt-bar" style="width:' + cpuPct + '%;background:#4ecdc4"></div></div></div>';
-        body += '<div class="tt-row"><span class="tt-label">MEM</span><span class="tt-val">' + (memV >= 0 ? memV.toFixed(1) + '%' : 'N/A') + '</span>';
-        body += '<div class="tt-bar-wrap"><div class="tt-bar" style="width:' + memPct + '%;background:#ffe66d"></div></div></div>';
-        body += '<div class="tt-row"><span class="tt-label">Disk R</span><span class="tt-val">' + metricLabel(d.dr) + '</span></div>';
-        body += '<div class="tt-row"><span class="tt-label">Disk W</span><span class="tt-val">' + metricLabel(d.dw) + '</span></div>';
+        let html = '';
+        html += '<div class="tt-time">' + dt.toLocaleString() + '</div>';
+        html += '<div class="tt-row"><span class="tt-label">CPU</span><span class="tt-val" style="color:' + cpuColor + '">' + (cpuV >= 0 ? cpuV.toFixed(1) + '%' : 'N/A') + '</span>';
+        html += '<div class="tt-bar-wrap"><div class="tt-bar" style="width:' + cpuPct + '%;background:' + cpuColor + '"></div></div></div>';
+        html += '<div class="tt-row"><span class="tt-label">MEM</span><span class="tt-val" style="color:' + memColor + '">' + (memV >= 0 ? memV.toFixed(1) + '%' : 'N/A') + '</span>';
+        html += '<div class="tt-bar-wrap"><div class="tt-bar" style="width:' + memPct + '%;background:' + memColor + '"></div></div></div>';
+        html += '<div class="tt-row"><span class="tt-label">Disk R</span><span class="tt-val">' + metricLabel(d.dr) + '</span></div>';
+        html += '<div class="tt-row"><span class="tt-label">Disk W</span><span class="tt-val">' + metricLabel(d.dw) + '</span></div>';
 
-        document.getElementById('tt-time').style.display = 'none';
-        document.getElementById('tt-body').innerHTML = body;
-
+        tooltip.innerHTML = html;
         tooltip.style.display = 'block';
-        // Position tooltip, keep within viewport
         let tx = e.clientX + 16;
         let ty = e.clientY + 16;
         const tw = tooltip.offsetWidth;
         const th = tooltip.offsetHeight;
-        if (tx + tw > window.innerWidth - 10) tx = e.clientX - tw - 16;
-        if (ty + th > window.innerHeight - 10) ty = e.clientY - th - 16;
+        if (tx + tw > window.innerWidth - 12) tx = e.clientX - tw - 16;
+        if (ty + th > window.innerHeight - 12) ty = e.clientY - th - 16;
         tooltip.style.left = tx + 'px';
         tooltip.style.top = ty + 'px';
     }
 
     canvas.addEventListener('mousemove', showTooltip);
-    canvas.addEventListener('mouseleave', function() { tooltip.style.display = 'none'; });
+    canvas.addEventListener('mouseleave', function() {
+        tooltip.style.display = 'none';
+        crosshairV.style.display = 'none';
+        hoveredIdx = -1;
+        drawHeatmap();
+    });
 
     // --- Click on heatmap to load process snapshot ---
     canvas.addEventListener('click', function(e) {
@@ -455,7 +546,7 @@ table.process-table td.name-cell{font-weight:500;max-width:280px;overflow:hidden
         const rect = canvas.getBoundingClientRect();
         const mx = e.clientX - rect.left;
         const cw = canvas.clientWidth;
-        const ml = 8, mr = 8;
+        const ml = 10, mr = 10;
         const dw = cw - ml - mr;
         const bw = dw / heatmapData.length;
         const idx = Math.floor((mx - ml) / bw);
@@ -514,8 +605,9 @@ table.process-table td.name-cell{font-weight:500;max-width:280px;overflow:hidden
         try {
             const resp = await fetch(API_BASE + '/api/snapshot?time=' + t);
             if (!resp.ok) {
-                const err = await resp.json();
-                error.textContent = err.message || 'Failed to load snapshot';
+                let msg = 'Failed to load snapshot';
+                try { const err = await resp.json(); msg = err.message || msg; } catch(e2) {}
+                document.getElementById('error-text').textContent = msg;
                 error.style.display = 'flex';
                 loading.style.display = 'none';
                 return;
@@ -524,7 +616,7 @@ table.process-table td.name-cell{font-weight:500;max-width:280px;overflow:hidden
             renderSnapshot(json, t);
             loading.style.display = 'none';
         } catch(e) {
-            error.textContent = 'Network error';
+            document.getElementById('error-text').textContent = 'Network error';
             error.style.display = 'flex';
             loading.style.display = 'none';
         }
@@ -545,10 +637,22 @@ table.process-table td.name-cell{font-weight:500;max-width:280px;overflow:hidden
 
         const cpuEl = document.getElementById('snap-cpu');
         const memEl = document.getElementById('snap-mem');
-        cpuEl.textContent = data.system.cpu >= 0 ? data.system.cpu.toFixed(1) + '%' : 'N/A';
-        cpuEl.style.color = data.system.cpu >= 0 ? (data.system.cpu > 75 ? '#f87171' : data.system.cpu > 50 ? '#ff9f43' : '#4ecdc4') : '';
-        memEl.textContent = data.system.mem >= 0 ? data.system.mem.toFixed(1) + '%' : 'N/A';
-        memEl.style.color = data.system.mem >= 0 ? (data.system.mem > 80 ? '#f87171' : '#ffe66d') : '';
+        const cpuVal = data.system.cpu;
+        const memVal = data.system.mem;
+
+        cpuEl.textContent = cpuVal >= 0 ? cpuVal.toFixed(1) + '%' : 'N/A';
+        cpuEl.style.color = cpuVal >= 0 ? (cpuVal > 75 ? '#f87171' : cpuVal > 50 ? '#ff9f43' : '#4ecdc4') : '';
+        memEl.textContent = memVal >= 0 ? memVal.toFixed(1) + '%' : 'N/A';
+        memEl.style.color = memVal >= 0 ? (memVal > 80 ? '#f87171' : '#ffe66d') : '';
+
+        // Update stat card progress bars
+        const cpuBar = document.getElementById('snap-cpu-bar');
+        const memBar = document.getElementById('snap-mem-bar');
+        if (cpuVal >= 0) { cpuBar.style.width = Math.min(cpuVal, 100) + '%'; cpuBar.style.background = cpuVal > 75 ? 'linear-gradient(90deg,#e94560,#f87171)' : cpuVal > 50 ? 'linear-gradient(90deg,#ff9f43,#fb923c)' : 'linear-gradient(90deg,#4ecdc4,#38b2ac)'; }
+        else { cpuBar.style.width = '0%'; }
+        if (memVal >= 0) { memBar.style.width = Math.min(memVal, 100) + '%'; memBar.style.background = memVal > 80 ? 'linear-gradient(90deg,#e94560,#f87171)' : 'linear-gradient(90deg,#ffe66d,#fbbf24)'; }
+        else { memBar.style.width = '0%'; }
+
         document.getElementById('snap-dr').textContent = data.system.disk_read_bps >= 0 ? formatBytes(data.system.disk_read_bps) + '/s' : 'N/A';
         document.getElementById('snap-dw').textContent = data.system.disk_write_bps >= 0 ? formatBytes(data.system.disk_write_bps) + '/s' : 'N/A';
 
@@ -592,7 +696,7 @@ table.process-table td.name-cell{font-weight:500;max-width:280px;overflow:hidden
             const barClass = cpuBarClass(p.cpu);
 
             html += '<tr class="' + spikeClass + '">' +
-                '<td><div class="cpu-bar-wrap"><span class="cpu-val">' + p.cpu.toFixed(1) + '%</span><div style="flex:1;background:#1e2140;height:6px;border-radius:3px;overflow:hidden"><div class="cpu-bar ' + barClass + '" style="width:' + barW + '%"></div></div></div></td>' +
+                '<td><div class="cpu-bar-wrap"><span class="cpu-val">' + p.cpu.toFixed(1) + '%</span><div class="cpu-bar-track"><div class="cpu-bar ' + barClass + '" style="width:' + barW + '%"></div></div></div></td>' +
                 '<td>' + p.mem.toFixed(1) + ' MB</td>' +
                 '<td class="pid-cell">' + p.pid + '</td>' +
                 '<td class="name-cell" title="' + escapeHtml(p.name) + '">' + escapeHtml(p.name) + '</td>' +
@@ -634,14 +738,20 @@ table.process-table td.name-cell{font-weight:500;max-width:280px;overflow:hidden
                 const last = heatmapData[heatmapData.length - 1];
                 const cpuEl = document.getElementById('rt-cpu');
                 const memEl = document.getElementById('rt-mem');
+                const cpuFill = document.getElementById('rt-cpu-fill');
+                const memFill = document.getElementById('rt-mem-fill');
+
                 if (last.cpu >= 0) {
                     cpuEl.textContent = last.cpu.toFixed(1) + '%';
-                    cpuEl.style.color = last.cpu > 75 ? '#f87171' : last.cpu > 50 ? '#ff9f43' : '#4ecdc4';
-                } else { cpuEl.textContent = '--'; }
+                    cpuEl.className = 'rt-value' + (last.cpu > 75 ? ' danger' : last.cpu > 50 ? ' warn' : '');
+                    cpuFill.style.width = Math.min(last.cpu, 100) + '%';
+                } else { cpuEl.textContent = '--'; cpuFill.style.width = '0%'; }
+
                 if (last.mem >= 0) {
                     memEl.textContent = last.mem.toFixed(1) + '%';
-                    memEl.style.color = last.mem > 80 ? '#f87171' : '#ffe66d';
-                } else { memEl.textContent = '--'; }
+                    memEl.className = 'rt-value' + (last.mem > 80 ? ' danger' : '');
+                    memFill.style.width = Math.min(last.mem, 100) + '%';
+                } else { memEl.textContent = '--'; memFill.style.width = '0%'; }
             }
         } catch(e) {}
     }
