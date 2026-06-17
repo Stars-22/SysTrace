@@ -110,6 +110,48 @@ std::string serialize_snapshot(const SystemSnapshot& snap, time_t requested_time
     return json;
 }
 
+std::string serialize_aggregate_snapshot(double cpu, double mem, double dr, double dw,
+                                          const SystemSnapshot& earliest_snap,
+                                          time_t requested_time, time_t actual_from) {
+    std::string json;
+    json.reserve(4096);
+
+    char header[512];
+    snprintf(header, sizeof(header),
+        R"({"timestamp":%lld,"system":{"cpu":%s,"mem":%s,"disk_read_bps":%s,"disk_write_bps":%s},)",
+        static_cast<long long>(requested_time),
+        format_double(cpu).c_str(),
+        format_double(mem).c_str(),
+        format_double(dr).c_str(),
+        format_double(dw).c_str());
+
+    json += header;
+
+    char meta[256];
+    snprintf(meta, sizeof(meta),
+        R"("meta":{"actual_time":%lld,"delta_seconds":0,"aggregated":true,"aggregated_from":%lld},"processes":[)",
+        static_cast<long long>(earliest_snap.timestamp),
+        static_cast<long long>(actual_from));
+    json += meta;
+
+    for (size_t i = 0; i < earliest_snap.processes.size(); ++i) {
+        const auto& p = earliest_snap.processes[i];
+        char entry[512];
+        snprintf(entry, sizeof(entry),
+            R"({"pid":%lu,"name":"%s","cpu":%s,"mem":%s})",
+            static_cast<unsigned long>(p.pid),
+            escape(p.name).c_str(),
+            format_double(p.cpu_pct).c_str(),
+            format_double(p.mem_mb).c_str());
+
+        if (i > 0) json += ",";
+        json += entry;
+    }
+
+    json += "]}";
+    return json;
+}
+
 std::string serialize_status(const std::string& version,
                               long long uptime_seconds,
                               size_t snapshot_count,

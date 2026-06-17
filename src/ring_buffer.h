@@ -130,6 +130,43 @@ public:
         return snapshot_data_.back().timestamp;
     }
 
+    const SystemSnapshot* earliest_snapshot() const {
+        std::shared_lock lock(mutex_);
+        if (snapshot_data_.empty()) return nullptr;
+        return &snapshot_data_.front();
+    }
+
+    struct HeatmapAverage {
+        double cpu_pct      = 0.0;
+        double mem_pct      = 0.0;
+        double disk_read_bps  = -1.0;
+        double disk_write_bps = -1.0;
+        int    count        = 0;
+    };
+
+    HeatmapAverage average_heatmap_range(time_t from, time_t to) const {
+        std::shared_lock lock(mutex_);
+        HeatmapAverage avg;
+        double sum_cpu = 0, sum_mem = 0, sum_dr = 0, sum_dw = 0;
+        int dr_count = 0, dw_count = 0;
+        for (const auto& e : heatmap_data_) {
+            if (e.timestamp < from) continue;
+            if (e.timestamp > to) break;
+            sum_cpu += e.cpu_pct;
+            sum_mem += e.mem_pct;
+            if (e.disk_read_bps >= 0) { sum_dr += e.disk_read_bps; dr_count++; }
+            if (e.disk_write_bps >= 0) { sum_dw += e.disk_write_bps; dw_count++; }
+            avg.count++;
+        }
+        if (avg.count > 0) {
+            avg.cpu_pct = sum_cpu / avg.count;
+            avg.mem_pct = sum_mem / avg.count;
+            avg.disk_read_bps  = (dr_count > 0)  ? sum_dr / dr_count  : -1.0;
+            avg.disk_write_bps = (dw_count > 0) ? sum_dw / dw_count : -1.0;
+        }
+        return avg;
+    }
+
     size_t heatmap_size() const {
         std::shared_lock lock(mutex_);
         return heatmap_data_.size();

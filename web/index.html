@@ -1033,7 +1033,10 @@ table.process-table td.name-cell{font-weight:500;max-width:280px;overflow:hidden
 
         const dt = new Date(data.timestamp * 1000);
         let timeStr = dt.toLocaleString();
-        if (data.meta && data.meta.delta_seconds > 0) {
+        if (data.meta && data.meta.aggregated) {
+            const fromStr = formatDateTime(data.meta.aggregated_from);
+            timeStr += ' <span class="snap-time-sub">(avg from ' + fromStr + ')</span>';
+        } else if (data.meta && data.meta.delta_seconds > 0) {
             timeStr += ' <span class="snap-time-sub">(' + data.meta.delta_seconds + 's earlier)</span>';
         }
         document.getElementById('snap-time').innerHTML = timeStr;

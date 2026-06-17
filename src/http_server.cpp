@@ -180,6 +180,18 @@ void SysTraceServer::setup_routes() {
         if (!snap) {
             time_t oldest = buffer_->oldest_snapshot_time();
             time_t newest = buffer_->newest_snapshot_time();
+
+            if (t < oldest && oldest > 0) {
+                const SystemSnapshot* earliest = buffer_->earliest_snapshot();
+                if (earliest) {
+                    auto avg = buffer_->average_heatmap_range(oldest, newest);
+                    res.set_content(json::serialize_aggregate_snapshot(
+                        avg.cpu_pct, avg.mem_pct, avg.disk_read_bps, avg.disk_write_bps,
+                        *earliest, t, oldest), "application/json");
+                    return;
+                }
+            }
+
             if (t < oldest || t > newest) {
                 res.status = 404;
                 res.set_content(json::serialize_error("snapshot_expired",
