@@ -7,15 +7,19 @@
 #include <cmath>
 #include <set>
 
+// Link PDH library
+#pragma comment(lib, "pdh.lib")
+
 Collector::Collector(RingBuffer& buffer, CollectorConfig config)
     : buffer_(buffer), config_(std::move(config)) {
-    init_disk_io();
+    // PDH query will be initialized lazily in query_disk_io()
 }
 
 Collector::~Collector() {
     stop();
-    if (nt_dll_) {
-        FreeLibrary(static_cast<HMODULE>(nt_dll_));
+    if (pdh_query_ != nullptr) {
+        PdhCloseQuery(pdh_query_);
+        pdh_query_ = nullptr;
     }
 }
 
@@ -47,65 +51,82 @@ uint64_t Collector::filetime_to_uint64(const FILETIME& ft) {
     return (static_cast<uint64_t>(ft.dwHighDateTime) << 32) | ft.dwLowDateTime;
 }
 
-// init_disk_io() - Dynamically load ntdll.dll for disk IO statistics via NtQuerySystemInformation
-void Collector::init_disk_io() {
-    nt_dll_ = static_cast<void*>(LoadLibraryA("ntdll.dll"));
-    if (!nt_dll_) {
-        disk_io_available_ = false;
-        return;
-    }
-    NtQuerySystemInformation_fn_ = reinterpret_cast<NtQuerySystemInformation_t>(
-        GetProcAddress(static_cast<HMODULE>(nt_dll_), "NtQuerySystemInformation"));
-    if (!NtQuerySystemInformation_fn_) {
-        disk_io_available_ = false;
-    }
-}
-
-// query_disk_io() - Query disk read/write bytes using NtQuerySystemInformation (class 2)
+// query_disk_io() - Query disk read/write bytes per second using PDH (Performance Data Helper)
+// PDH is the official Windows API for querying performance counters.
+// We use the "\PhysicalDisk(_Total)\Disk Read Bytes/sec" and "\Disk Write Bytes/sec" counters.
 bool Collector::query_disk_io(double& read_bps, double& write_bps) {
-    if (!disk_io_available_ || !NtQuerySystemInformation_fn_) {
+    if (!disk_io_available_) {
         read_bps = -1.0;
         write_bps = -1.0;
         return false;
     }
 
-    // SystemPerformanceInformation = class 2
-    struct SYSTEM_PERFORMANCE_INFORMATION {
-        uint64_t idle_time;
-        uint64_t read_operation_count;
-        uint64_t write_operation_count;
-        uint64_t other_operation_count;
-        uint64_t read_transfer_count;
-        uint64_t write_transfer_count;
-        uint64_t other_transfer_count;
-    };
+    if (pdh_query_ == nullptr) {
+        PDH_STATUS status = PdhOpenQuery(nullptr, 0, &pdh_query_);
+        if (status != ERROR_SUCCESS) {
+            disk_io_available_ = false;
+            read_bps = -1.0;
+            write_bps = -1.0;
+            return false;
+        }
 
-    SYSTEM_PERFORMANCE_INFORMATION perf = {};
-    ULONG ret_len = 0;
-    long status = NtQuerySystemInformation_fn_(2, &perf, sizeof(perf), &ret_len);
-    if (status != 0) {
+        status = PdhAddEnglishCounterA(pdh_query_, "\\PhysicalDisk(_Total)\\Disk Read Bytes/sec", 0, &pdh_counter_read_);
+        if (status != ERROR_SUCCESS) {
+            PdhCloseQuery(pdh_query_);
+            pdh_query_ = nullptr;
+            disk_io_available_ = false;
+            read_bps = -1.0;
+            write_bps = -1.0;
+            return false;
+        }
+
+        status = PdhAddEnglishCounterA(pdh_query_, "\\PhysicalDisk(_Total)\\Disk Write Bytes/sec", 0, &pdh_counter_write_);
+        if (status != ERROR_SUCCESS) {
+            PdhCloseQuery(pdh_query_);
+            pdh_query_ = nullptr;
+            disk_io_available_ = false;
+            read_bps = -1.0;
+            write_bps = -1.0;
+            return false;
+        }
+
+        // First call to PdhCollectQueryData establishes the baseline
+        PdhCollectQueryData(pdh_query_);
+        first_disk_sample_ = true;
         read_bps = -1.0;
         write_bps = -1.0;
         return false;
     }
 
-    DiskIOSample curr;
-    curr.read_bytes  = perf.read_transfer_count;
-    curr.write_bytes = perf.write_transfer_count;
+    PDH_STATUS status = PdhCollectQueryData(pdh_query_);
+    if (status != ERROR_SUCCESS) {
+        read_bps = -1.0;
+        write_bps = -1.0;
+        return false;
+    }
 
     if (first_disk_sample_) {
-        prev_disk_io_ = curr;
         first_disk_sample_ = false;
         read_bps = -1.0;
         write_bps = -1.0;
         return false;
     }
 
-    double interval_sec = static_cast<double>(config_.interval_ms) / 1000.0;
-    read_bps  = static_cast<double>(curr.read_bytes - prev_disk_io_.read_bytes) / interval_sec;
-    write_bps = static_cast<double>(curr.write_bytes - prev_disk_io_.write_bytes) / interval_sec;
+    PDH_FMT_COUNTERVALUE val_read, val_write;
+    status = PdhGetFormattedCounterValue(pdh_counter_read_, PDH_FMT_DOUBLE, nullptr, &val_read);
+    if (status != ERROR_SUCCESS) {
+        read_bps = -1.0;
+    } else {
+        read_bps = val_read.doubleValue;
+    }
 
-    prev_disk_io_ = curr;
+    status = PdhGetFormattedCounterValue(pdh_counter_write_, PDH_FMT_DOUBLE, nullptr, &val_write);
+    if (status != ERROR_SUCCESS) {
+        write_bps = -1.0;
+    } else {
+        write_bps = val_write.doubleValue;
+    }
+
     return true;
 }
 

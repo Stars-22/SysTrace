@@ -4,6 +4,7 @@
 #include "ring_buffer.h"
 #include <windows.h>
 #include <psapi.h>
+#include <pdh.h>
 #include <atomic>
 #include <thread>
 #include <unordered_map>
@@ -48,23 +49,16 @@ private:
     SystemCpuSample prev_sys_cpu_{};
     bool first_sample_ = true;
 
-    struct DiskIOSample {
-        uint64_t read_bytes  = 0;
-        uint64_t write_bytes = 0;
-    };
-
-    DiskIOSample prev_disk_io_{};
+    // PDH handles for disk IO counters
+    PDH_HQUERY pdh_query_ = nullptr;
+    PDH_HCOUNTER pdh_counter_read_ = nullptr;
+    PDH_HCOUNTER pdh_counter_write_ = nullptr;
     bool first_disk_sample_ = true;
     bool disk_io_available_ = true;
-    void* nt_dll_ = nullptr;
 
     std::unordered_map<DWORD, ProcessCpuContext> proc_contexts_;
     std::unordered_map<std::string, uint8_t> name_pool_;
 
-    using NtQuerySystemInformation_t = long(*)(unsigned long, void*, unsigned long, unsigned long*);
-    NtQuerySystemInformation_t NtQuerySystemInformation_fn_ = nullptr;
-
-    void init_disk_io();
     bool query_disk_io(double& read_bps, double& write_bps);
     std::string get_process_name(DWORD pid);
 };

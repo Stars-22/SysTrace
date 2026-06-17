@@ -29,6 +29,7 @@ if(WIN32)
         psapi
         kernel32
         ws2_32
+        pdh
     )
 endif()
 
