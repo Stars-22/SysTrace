@@ -63,9 +63,10 @@ header h1 span{color:var(--brand);font-weight:800}
 .heatmap-container::before{content:'';position:absolute;top:-1px;left:20px;right:20px;height:1px;background:linear-gradient(90deg,transparent,rgba(78,205,196,.2),transparent)}
 .heatmap-container::after{content:'';position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 2px 10px rgba(0,0,0,.4);border-radius:14px}
 canvas#heatmap{width:100%;height:180px;display:block;cursor:crosshair;border-radius:8px}
+canvas#heatmap:focus{outline:none}
+canvas#heatmap:focus-visible{box-shadow:0 0 0 2px rgba(78,205,196,.3)}
 
 /* ====== Crosshair ====== */
-.crosshair{position:absolute;pointer-events:none;z-index:3;display:none}
 .crosshair-v{position:absolute;top:8px;bottom:38px;width:1px;background:rgba(255,255,255,.18);pointer-events:none;z-index:3;display:none;filter:drop-shadow(0 0 2px rgba(255,255,255,.3))}
 .crosshair-v::before{content:'';position:absolute;top:0;left:-3px;width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.6);box-shadow:0 0 6px rgba(255,255,255,.4)}
 .crosshair-h{position:absolute;left:8px;right:8px;height:1px;background:rgba(255,255,255,.06);pointer-events:none;z-index:2;display:none}
@@ -96,6 +97,29 @@ canvas#heatmap{width:100%;height:180px;display:block;cursor:crosshair;border-rad
 .legend{display:flex;gap:20px;margin-top:14px;font-size:11px;color:var(--text-muted);justify-content:center;align-items:center}
 .legend-item{display:flex;align-items:center;gap:5px}
 .legend-item .swatch{width:16px;height:8px;border-radius:2px;box-shadow:0 0 4px rgba(0,0,0,.3)}
+
+/* ====== Time Controls ====== */
+.time-controls{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:14px;padding:0 4px}
+.quick-presets{display:flex;gap:4px;flex-wrap:wrap}
+.preset-btn{padding:5px 12px;border:1px solid var(--border);border-radius:8px;background:var(--bg-secondary);color:var(--text-muted);font-size:11px;font-weight:500;cursor:pointer;transition:all .2s;font-family:inherit;white-space:nowrap}
+.preset-btn:hover{border-color:var(--border-light);color:var(--text-primary);background:var(--bg-card)}
+.preset-btn:active{transform:scale(.95)}
+.preset-btn.active{border-color:var(--accent);color:var(--accent);background:rgba(78,205,196,.08)}
+.time-input-group{display:flex;align-items:center;gap:6px;margin-left:auto}
+.time-input-group input[type="datetime-local"]{background:var(--bg-secondary);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);padding:5px 10px;font-size:12px;font-family:inherit;outline:none;transition:border-color .2s;min-width:180px}
+.time-input-group input[type="datetime-local"]:focus{border-color:var(--accent)}
+.time-input-group input[type="datetime-local"]::-webkit-calendar-picker-indicator{filter:invert(.7)}
+.time-input-group input[type="datetime-local"].input-error{border-color:var(--brand)!important}
+.go-btn{padding:5px 14px;border:1px solid var(--accent);border-radius:8px;background:rgba(78,205,196,.1);color:var(--accent);font-size:11px;font-weight:600;cursor:pointer;transition:all .2s;font-family:inherit}
+.go-btn:hover{background:rgba(78,205,196,.2)}
+.go-btn:active{transform:scale(.95)}
+
+/* ====== Zoom Bar ====== */
+.zoom-bar{display:none;align-items:center;gap:10px;margin-top:8px;padding:6px 14px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:8px;font-size:11px}
+.zoom-bar.visible{display:flex}
+.zoom-range{color:var(--text-secondary);font-variant-numeric:tabular-nums;letter-spacing:.2px}
+.zoom-reset{padding:3px 10px;border:1px solid var(--border);border-radius:6px;background:transparent;color:var(--text-muted);font-size:10px;cursor:pointer;transition:all .2s;font-family:inherit;margin-left:auto;letter-spacing:.3px}
+.zoom-reset:hover{border-color:var(--brand);color:var(--brand)}
 
 /* ====== Detail Container ====== */
 .detail-container{background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:24px;box-shadow:0 4px 28px rgba(0,0,0,.2)}
@@ -191,6 +215,9 @@ table.process-table td.name-cell{font-weight:500;max-width:280px;overflow:hidden
     .rt-card .rt-value{font-size:20px}
     .sys-stats{grid-template-columns:1fr 1fr}
     .section-header{flex-direction:column;gap:8px;align-items:flex-start}
+    .time-controls{flex-direction:column;align-items:flex-start}
+    .time-input-group{margin-left:0;width:100%}
+    .time-input-group input[type="datetime-local"]{flex:1;min-width:0}
 }
 </style>
 </head>
@@ -238,7 +265,7 @@ table.process-table td.name-cell{font-weight:500;max-width:280px;overflow:hidden
     <div class="skeleton-overlay" id="skeleton">
       <div class="skel-bar"></div><div class="skel-bar"></div><div class="skel-bar"></div><div class="skel-bar"></div><div class="skel-bar"></div><div class="skel-bar"></div>
     </div>
-    <canvas id="heatmap"></canvas>
+    <canvas id="heatmap" tabindex="0"></canvas>
     <div class="crosshair-v" id="crosshair-v"></div>
     <div class="crosshair-h" id="crosshair-h"></div>
     <div class="tooltip" id="tooltip"></div>
@@ -250,6 +277,24 @@ table.process-table td.name-cell{font-weight:500;max-width:280px;overflow:hidden
       <div class="legend-item"><div class="swatch" style="background:#2a2a3a"></div>N/A</div>
     </div>
   </div>
+  <div class="zoom-bar" id="zoom-bar">
+    <span class="zoom-range" id="zoom-range"></span>
+    <button class="zoom-reset" id="zoom-reset">Reset Zoom</button>
+  </div>
+  <div class="time-controls" id="time-controls">
+    <div class="quick-presets">
+      <button class="preset-btn" data-offset="0">Now</button>
+      <button class="preset-btn" data-offset="60">1m</button>
+      <button class="preset-btn" data-offset="300">5m</button>
+      <button class="preset-btn" data-offset="1800">30m</button>
+      <button class="preset-btn" data-offset="3600">1h</button>
+      <button class="preset-btn" data-offset="21600">6h</button>
+    </div>
+    <div class="time-input-group">
+      <input type="datetime-local" id="time-input" step="1">
+      <button class="go-btn" id="go-btn">Go</button>
+    </div>
+  </div>
 </div>
 
 <div class="section">
@@ -258,7 +303,7 @@ table.process-table td.name-cell{font-weight:500;max-width:280px;overflow:hidden
       <div class="ns-box">
         <div class="ns-icon">&#128202;</div>
         <div class="ns-text">Click on the heatmap to view process details</div>
-        <div class="ns-hint">Select any time point to drill down</div>
+        <div class="ns-hint">Drag to zoom, use arrow keys to navigate, or pick a time below</div>
       </div>
     </div>
     <div id="snapshot-content" style="display:none" class="fade-in">
@@ -329,13 +374,31 @@ table.process-table td.name-cell{font-weight:500;max-width:280px;overflow:hidden
     let sortDesc = true;
     let currentSnapshotData = null;
     let hoveredIdx = -1;
+    let selectedIdx = -1;
+    let zoomFrom = null;
+    let zoomTo = null;
+    let isDragging = false;
+    let dragStartX = 0;
+    let dragCurrentX = 0;
+    let hasDragged = false;
+    const DRAG_THRESHOLD = 5;
+    const CLICK_TOLERANCE = 10;
+    const MIN_ZOOM_SECONDS = 30;
+
     const canvas = document.getElementById('heatmap');
     const ctx = canvas.getContext('2d');
     const tooltip = document.getElementById('tooltip');
     const crosshairV = document.getElementById('crosshair-v');
     const crosshairH = document.getElementById('crosshair-h');
+    const zoomBar = document.getElementById('zoom-bar');
+    const zoomRangeEl = document.getElementById('zoom-range');
+    const timeInput = document.getElementById('time-input');
 
-    // --- Metric helpers ---
+    function getVisibleData() {
+        if (zoomFrom === null || zoomTo === null) return heatmapData;
+        return heatmapData.filter(d => d.t >= zoomFrom && d.t <= zoomTo);
+    }
+
     function metricValue(d) {
         if (currentMetric === 'cpu') return d.cpu;
         if (currentMetric === 'mem') return d.mem;
@@ -371,7 +434,6 @@ table.process-table td.name-cell{font-weight:500;max-width:280px;overflow:hidden
         return 'extreme';
     }
 
-    // --- Calculate heatmap downsample step based on canvas width ---
     function calculateStep() {
         const w = Math.max(canvas.clientWidth - 60, 100);
         let step = Math.ceil(86400 / w);
@@ -379,7 +441,63 @@ table.process-table td.name-cell{font-weight:500;max-width:280px;overflow:hidden
         return Math.max(step, 1);
     }
 
-    // --- Draw heatmap on canvas ---
+    function findNearestBar(mx) {
+        const vd = getVisibleData();
+        if (vd.length === 0) return -1;
+        const cw = canvas.clientWidth;
+        const ml = 10, mr = 10;
+        const dw = cw - ml - mr;
+        const bw = dw / vd.length;
+        const directIdx = Math.floor((mx - ml) / bw);
+        if (directIdx >= 0 && directIdx < vd.length) {
+            const barCenter = ml + directIdx * bw + bw / 2;
+            if (Math.abs(mx - barCenter) <= Math.max(bw / 2, CLICK_TOLERANCE)) return directIdx;
+        }
+        let bestIdx = 0, bestDist = Infinity;
+        for (let i = 0; i < vd.length; i++) {
+            const cx = ml + i * bw + bw / 2;
+            const dist = Math.abs(mx - cx);
+            if (dist < bestDist) { bestDist = dist; bestIdx = i; }
+        }
+        return bestIdx;
+    }
+
+    function formatTimeShort(t) {
+        const d = new Date(t * 1000);
+        return String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0') + ':' + String(d.getSeconds()).padStart(2,'0');
+    }
+
+    function formatDateTime(t) {
+        const d = new Date(t * 1000);
+        const mo = String(d.getMonth() + 1).padStart(2,'0');
+        const da = String(d.getDate()).padStart(2,'0');
+        const h = String(d.getHours()).padStart(2,'0');
+        const mi = String(d.getMinutes()).padStart(2,'0');
+        const s = String(d.getSeconds()).padStart(2,'0');
+        return mo + '/' + da + ' ' + h + ':' + mi + ':' + s;
+    }
+
+    function timestampToInputVal(t) {
+        const d = new Date(t * 1000);
+        return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0') +
+            'T' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0') + ':' + String(d.getSeconds()).padStart(2,'0');
+    }
+
+    function inputValToTimestamp(val) {
+        return Math.floor(new Date(val).getTime() / 1000);
+    }
+
+    function findNearestIdxInData(t) {
+        const vd = getVisibleData();
+        if (vd.length === 0) return -1;
+        let bestIdx = 0, bestDist = Infinity;
+        for (let i = 0; i < vd.length; i++) {
+            const dist = Math.abs(vd[i].t - t);
+            if (dist < bestDist) { bestDist = dist; bestIdx = i; }
+        }
+        return bestIdx;
+    }
+
     function drawHeatmap() {
         const dpr = window.devicePixelRatio || 1;
         const cw = canvas.clientWidth;
@@ -392,24 +510,23 @@ table.process-table td.name-cell{font-weight:500;max-width:280px;overflow:hidden
         const dw = cw - ml - mr;
         const dh = ch - mt - mb;
 
-        // Background
         const bgGrad = ctx.createLinearGradient(0, 0, 0, ch);
         bgGrad.addColorStop(0, '#14132a');
         bgGrad.addColorStop(1, '#0a0a18');
         ctx.fillStyle = bgGrad;
         ctx.fillRect(0, 0, cw, ch);
 
-        // Rounded clip for heatmap area
         ctx.save();
         ctx.beginPath();
         ctx.roundRect(ml, mt, dw, dh, 4);
         ctx.clip();
 
-        // Fill heatmap background
         ctx.fillStyle = '#0d0d1a';
         ctx.fillRect(ml, mt, dw, dh);
 
-        if (heatmapData.length === 0) {
+        const vd = getVisibleData();
+
+        if (vd.length === 0) {
             ctx.restore();
             ctx.fillStyle = '#5a5a7a';
             ctx.font = '13px -apple-system, BlinkMacSystemFont, sans-serif';
@@ -418,29 +535,70 @@ table.process-table td.name-cell{font-weight:500;max-width:280px;overflow:hidden
             return;
         }
 
-        const bw = dw / heatmapData.length;
+        const bw = dw / vd.length;
 
-        // Highlight hovered column
-        if (hoveredIdx >= 0 && hoveredIdx < heatmapData.length) {
+        if (hoveredIdx >= 0 && hoveredIdx < vd.length) {
             ctx.fillStyle = 'rgba(255,255,255,0.03)';
             ctx.fillRect(ml + hoveredIdx * bw, mt, bw, dh);
         }
 
-        // Draw heatmap blocks
-        for (let i = 0; i < heatmapData.length; i++) {
+        for (let i = 0; i < vd.length; i++) {
             const x = ml + i * bw;
-            const v = metricValue(heatmapData[i]);
+            const v = metricValue(vd[i]);
             ctx.fillStyle = metricColor(v);
             ctx.fillRect(x, mt, Math.max(bw + 0.5, 1), dh);
         }
 
-        // Hover highlight column
-        if (hoveredIdx >= 0 && hoveredIdx < heatmapData.length) {
+        if (hoveredIdx >= 0 && hoveredIdx < vd.length) {
             ctx.fillStyle = 'rgba(255,255,255,0.06)';
             ctx.fillRect(ml + hoveredIdx * bw, mt, Math.max(bw + 0.5, 1), dh);
         }
 
-        // Subtle top highlight line
+        if (selectedIdx >= 0 && selectedIdx < vd.length) {
+            const sx = ml + selectedIdx * bw;
+            const sw = Math.max(bw, 2);
+            ctx.fillStyle = 'rgba(78,205,196,0.15)';
+            ctx.fillRect(sx - 1, mt, sw + 2, dh);
+            ctx.strokeStyle = 'rgba(78,205,196,0.8)';
+            ctx.lineWidth = Math.max(1, Math.min(bw, 3));
+            ctx.beginPath();
+            ctx.moveTo(sx + sw / 2, mt);
+            ctx.lineTo(sx + sw / 2, mt + dh);
+            ctx.stroke();
+            ctx.fillStyle = '#4ecdc4';
+            ctx.beginPath();
+            const triY = mt + dh - 1;
+            const triSz = Math.max(4, Math.min(bw * 0.6, 6));
+            ctx.moveTo(sx + sw / 2 - triSz, triY + triSz + 2);
+            ctx.lineTo(sx + sw / 2 + triSz, triY + triSz + 2);
+            ctx.lineTo(sx + sw / 2, triY);
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        if (isDragging && hasDragged) {
+            const x1 = Math.max(Math.min(dragStartX, dragCurrentX), ml);
+            const x2 = Math.min(Math.max(dragStartX, dragCurrentX), ml + dw);
+            if (x2 - x1 > 2) {
+                ctx.fillStyle = 'rgba(78,205,196,0.12)';
+                ctx.fillRect(x1, mt, x2 - x1, dh);
+                ctx.strokeStyle = 'rgba(78,205,196,0.5)';
+                ctx.lineWidth = 1;
+                ctx.setLineDash([4, 3]);
+                ctx.strokeRect(x1, mt, x2 - x1, dh);
+                ctx.setLineDash([]);
+                ctx.fillStyle = '#4ecdc4';
+                ctx.font = 'bold 10px -apple-system, BlinkMacSystemFont, sans-serif';
+                ctx.textAlign = 'center';
+                const labelY = mt + dh / 2;
+                const t1 = vd[Math.max(0, Math.min(Math.floor((x1 - ml) / bw), vd.length - 1))].t;
+                const t2 = vd[Math.max(0, Math.min(Math.floor((x2 - ml) / bw), vd.length - 1))].t;
+                const dur = t2 - t1;
+                let durStr = dur >= 3600 ? (dur / 3600).toFixed(1) + 'h' : dur >= 60 ? Math.ceil(dur / 60) + 'm' : dur + 's';
+                ctx.fillText(durStr, (x1 + x2) / 2, labelY);
+            }
+        }
+
         const lineGrad = ctx.createLinearGradient(ml, 0, ml + dw, 0);
         lineGrad.addColorStop(0, 'rgba(78,205,196,0)');
         lineGrad.addColorStop(0.5, 'rgba(78,205,196,0.15)');
@@ -454,56 +612,58 @@ table.process-table td.name-cell{font-weight:500;max-width:280px;overflow:hidden
 
         ctx.restore();
 
-        // Time axis labels
         ctx.fillStyle = '#5a5a7a';
         ctx.font = '10px -apple-system, BlinkMacSystemFont, sans-serif';
         ctx.textAlign = 'center';
         const labelCount = Math.min(20, Math.floor(dw / 70));
-        const labelStep = Math.max(1, Math.floor(heatmapData.length / labelCount));
-        for (let i = 0; i < heatmapData.length; i += labelStep) {
+        const labelStep = Math.max(1, Math.floor(vd.length / labelCount));
+        for (let i = 0; i < vd.length; i += labelStep) {
             const x = ml + i * bw + bw / 2;
-            const d = new Date(heatmapData[i].t * 1000);
-            const label = String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
-            ctx.fillText(label, x, ch - 6);
+            ctx.fillText(formatTimeShort(vd[i].t), x, ch - 6);
         }
-        // "Now" label
-        if (heatmapData.length > 0) {
-            const x = ml + (heatmapData.length - 1) * bw + bw / 2;
+        if (vd.length > 0) {
+            const x = ml + (vd.length - 1) * bw + bw / 2;
             ctx.font = 'bold 10px -apple-system, BlinkMacSystemFont, sans-serif';
             ctx.fillStyle = '#4ecdc4';
             ctx.fillText('Now', x, ch - 6);
         }
+        if (vd.length > 0 && zoomFrom !== null) {
+            ctx.font = '10px -apple-system, BlinkMacSystemFont, sans-serif';
+            ctx.fillStyle = '#6c6c8a';
+            ctx.textAlign = 'left';
+            const d0 = new Date(vd[0].t * 1000);
+            ctx.fillText((d0.getMonth()+1) + '/' + d0.getDate(), ml, ch - 18);
+        }
     }
 
-    // --- Tooltip and crosshair on hover ---
     function showTooltip(e) {
-        if (heatmapData.length === 0) { tooltip.style.display = 'none'; crosshairV.style.display = 'none'; return; }
+        const vd = getVisibleData();
+        if (vd.length === 0) { tooltip.style.display = 'none'; crosshairV.style.display = 'none'; return; }
         const rect = canvas.getBoundingClientRect();
         const mx = e.clientX - rect.left;
-        const my = e.clientY - rect.top;
         const cw = canvas.clientWidth;
         const ml = 10, mr = 10;
         const dw = cw - ml - mr;
-        const bw = dw / heatmapData.length;
+        const bw = dw / vd.length;
         const idx = Math.floor((mx - ml) / bw);
-        if (idx < 0 || idx >= heatmapData.length) {
+        if (idx < 0 || idx >= vd.length) {
             tooltip.style.display = 'none';
             crosshairV.style.display = 'none';
+            hoveredIdx = -1;
+            drawHeatmap();
             return;
         }
 
         hoveredIdx = idx;
         drawHeatmap();
 
-        // Position crosshair
         crosshairV.style.display = 'block';
         const blockX = ml + idx * bw + bw / 2;
         crosshairV.style.left = (rect.left + blockX) + 'px';
         crosshairV.style.top = (rect.top + 10) + 'px';
         crosshairV.style.height = '140px';
 
-        const d = heatmapData[idx];
-        const dt = new Date(d.t * 1000);
+        const d = vd[idx];
         const cpuV = d.cpu >= 0 ? d.cpu : -1;
         const memV = d.mem >= 0 ? d.mem : -1;
         const cpuPct = cpuV >= 0 ? Math.min(cpuV, 100) : 0;
@@ -511,8 +671,7 @@ table.process-table td.name-cell{font-weight:500;max-width:280px;overflow:hidden
         const cpuColor = cpuV >= 0 ? (cpuV > 75 ? '#f87171' : cpuV > 50 ? '#ff9f43' : '#4ecdc4') : '#6c6c8a';
         const memColor = memV >= 0 ? (memV > 80 ? '#f87171' : '#ffe66d') : '#6c6c8a';
 
-        let html = '';
-        html += '<div class="tt-time">' + dt.toLocaleString() + '</div>';
+        let html = '<div class="tt-time">' + new Date(d.t * 1000).toLocaleString() + '</div>';
         html += '<div class="tt-row"><span class="tt-label">CPU</span><span class="tt-val" style="color:' + cpuColor + '">' + (cpuV >= 0 ? cpuV.toFixed(1) + '%' : 'N/A') + '</span>';
         html += '<div class="tt-bar-wrap"><div class="tt-bar" style="width:' + cpuPct + '%;background:' + cpuColor + '"></div></div></div>';
         html += '<div class="tt-row"><span class="tt-label">MEM</span><span class="tt-val" style="color:' + memColor + '">' + (memV >= 0 ? memV.toFixed(1) + '%' : 'N/A') + '</span>';
@@ -522,40 +681,283 @@ table.process-table td.name-cell{font-weight:500;max-width:280px;overflow:hidden
 
         tooltip.innerHTML = html;
         tooltip.style.display = 'block';
-        let tx = e.clientX + 16;
-        let ty = e.clientY + 16;
-        const tw = tooltip.offsetWidth;
-        const th = tooltip.offsetHeight;
+        let tx = e.clientX + 16, ty = e.clientY + 16;
+        const tw = tooltip.offsetWidth, th = tooltip.offsetHeight;
         if (tx + tw > window.innerWidth - 12) tx = e.clientX - tw - 16;
         if (ty + th > window.innerHeight - 12) ty = e.clientY - th - 16;
         tooltip.style.left = tx + 'px';
         tooltip.style.top = ty + 'px';
     }
 
-    canvas.addEventListener('mousemove', showTooltip);
+    canvas.addEventListener('mousedown', function(e) {
+        if (e.button !== 0) return;
+        const rect = canvas.getBoundingClientRect();
+        isDragging = true;
+        hasDragged = false;
+        dragStartX = e.clientX - rect.left;
+        dragCurrentX = dragStartX;
+    });
+
+    canvas.addEventListener('mousemove', function(e) {
+        if (isDragging && hasDragged) {
+            const rect = canvas.getBoundingClientRect();
+            dragCurrentX = e.clientX - rect.left;
+            tooltip.style.display = 'none';
+            crosshairV.style.display = 'none';
+            hoveredIdx = -1;
+            drawHeatmap();
+            return;
+        }
+        if (isDragging) {
+            const rect = canvas.getBoundingClientRect();
+            const cx = e.clientX - rect.left;
+            if (Math.abs(cx - dragStartX) > DRAG_THRESHOLD) {
+                hasDragged = true;
+                dragCurrentX = cx;
+                tooltip.style.display = 'none';
+                crosshairV.style.display = 'none';
+                hoveredIdx = -1;
+                drawHeatmap();
+                return;
+            }
+            return;
+        }
+        showTooltip(e);
+    });
+
+    canvas.addEventListener('mouseup', function(e) {
+        if (e.button !== 0) return;
+        if (!isDragging) return;
+        isDragging = false;
+
+        if (hasDragged) {
+            const vd = getVisibleData();
+            if (vd.length === 0) { hasDragged = false; drawHeatmap(); return; }
+            const cw = canvas.clientWidth;
+            const ml = 10, mr = 10;
+            const dw = cw - ml - mr;
+            const bw = dw / vd.length;
+
+            let x1 = Math.min(dragStartX, dragCurrentX);
+            let x2 = Math.max(dragStartX, dragCurrentX);
+            x1 = Math.max(x1, ml);
+            x2 = Math.min(x2, ml + dw);
+
+            if (x2 - x1 < 5) { hasDragged = false; drawHeatmap(); return; }
+
+            let idx1 = Math.floor((x1 - ml) / bw);
+            let idx2 = Math.ceil((x2 - ml) / bw) - 1;
+            idx1 = Math.max(0, Math.min(idx1, vd.length - 1));
+            idx2 = Math.max(0, Math.min(idx2, vd.length - 1));
+
+            let from = vd[idx1].t;
+            let to = vd[idx2].t;
+            if (to - from < MIN_ZOOM_SECONDS) {
+                const mid = Math.floor((from + to) / 2);
+                from = mid - Math.floor(MIN_ZOOM_SECONDS / 2);
+                to = mid + Math.ceil(MIN_ZOOM_SECONDS / 2);
+            }
+            zoomFrom = from;
+            zoomTo = to;
+            selectedIdx = -1;
+            hasDragged = false;
+            updateZoomBar();
+            drawHeatmap();
+            return;
+        }
+
+        hasDragged = false;
+        const rect = canvas.getBoundingClientRect();
+        const mx = e.clientX - rect.left;
+        const idx = findNearestBar(mx);
+        if (idx < 0) return;
+
+        selectedIdx = idx;
+        canvas.focus();
+        const vd = getVisibleData();
+        loadSnapshot(vd[idx].t);
+        drawHeatmap();
+    });
+
     canvas.addEventListener('mouseleave', function() {
+        if (isDragging) {
+            isDragging = false;
+            hasDragged = false;
+        }
         tooltip.style.display = 'none';
         crosshairV.style.display = 'none';
         hoveredIdx = -1;
         drawHeatmap();
     });
 
-    // --- Click on heatmap to load process snapshot ---
-    canvas.addEventListener('click', function(e) {
-        if (heatmapData.length === 0) return;
+    canvas.addEventListener('wheel', function(e) {
+        e.preventDefault();
+        const vd = getVisibleData();
+        if (vd.length === 0) return;
+
         const rect = canvas.getBoundingClientRect();
         const mx = e.clientX - rect.left;
         const cw = canvas.clientWidth;
         const ml = 10, mr = 10;
         const dw = cw - ml - mr;
-        const bw = dw / heatmapData.length;
-        const idx = Math.floor((mx - ml) / bw);
-        if (idx < 0 || idx >= heatmapData.length) return;
-        const t = heatmapData[idx].t;
-        loadSnapshot(t);
+        const bw = dw / vd.length;
+        let cursorIdx = Math.floor((mx - ml) / bw);
+        cursorIdx = Math.max(0, Math.min(cursorIdx, vd.length - 1));
+        const cursorTime = vd[cursorIdx].t;
+
+        const currentFrom = (zoomFrom !== null) ? zoomFrom : vd[0].t;
+        const currentTo = (zoomTo !== null) ? zoomTo : vd[vd.length - 1].t;
+        let currentRange = currentTo - currentFrom;
+        if (currentRange <= 0) currentRange = 86400;
+
+        const factor = e.deltaY > 0 ? 1.5 : 1 / 1.5;
+        let newRange = currentRange * factor;
+
+        const fullFrom = heatmapData.length > 0 ? heatmapData[0].t : 0;
+        const fullTo = heatmapData.length > 0 ? heatmapData[heatmapData.length - 1].t : 0;
+        const fullRange = fullTo - fullFrom;
+        if (fullRange <= 0) return;
+
+        if (newRange >= fullRange) {
+            zoomFrom = null;
+            zoomTo = null;
+            selectedIdx = -1;
+            updateZoomBar();
+            drawHeatmap();
+            return;
+        }
+
+        if (newRange < MIN_ZOOM_SECONDS) newRange = MIN_ZOOM_SECONDS;
+
+        const ratio = currentRange > 0 ? (cursorTime - currentFrom) / currentRange : 0.5;
+        let newFrom = Math.floor(cursorTime - ratio * newRange);
+        let newTo = Math.floor(cursorTime + (1 - ratio) * newRange);
+
+        if (newFrom < fullFrom) { newTo += (fullFrom - newFrom); newFrom = fullFrom; }
+        if (newTo > fullTo) { newFrom -= (newTo - fullTo); newTo = fullTo; }
+        newFrom = Math.max(newFrom, fullFrom);
+
+        zoomFrom = newFrom;
+        zoomTo = newTo;
+        selectedIdx = -1;
+        updateZoomBar();
+        drawHeatmap();
+    }, { passive: false });
+
+    canvas.addEventListener('keydown', function(e) {
+        const vd = getVisibleData();
+        if (vd.length === 0) return;
+
+        let handled = true;
+        if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+            const dir = (e.key === 'ArrowLeft') ? -1 : 1;
+            const step = e.shiftKey ? 10 : 1;
+            if (selectedIdx < 0) selectedIdx = 0;
+            selectedIdx = Math.max(0, Math.min(selectedIdx + dir * step, vd.length - 1));
+            loadSnapshot(vd[selectedIdx].t);
+            drawHeatmap();
+        } else if (e.key === 'Home') {
+            selectedIdx = 0;
+            loadSnapshot(vd[0].t);
+            drawHeatmap();
+        } else if (e.key === 'End') {
+            selectedIdx = vd.length - 1;
+            loadSnapshot(vd[vd.length - 1].t);
+            drawHeatmap();
+        } else {
+            handled = false;
+        }
+        if (handled) e.preventDefault();
     });
 
-    // --- Data fetching functions ---
+    function updateZoomBar() {
+        if (zoomFrom !== null && zoomTo !== null) {
+            zoomBar.classList.add('visible');
+            zoomRangeEl.textContent = formatDateTime(zoomFrom) + '  —  ' + formatDateTime(zoomTo);
+        } else {
+            zoomBar.classList.remove('visible');
+        }
+    }
+
+    document.getElementById('zoom-reset').addEventListener('click', function() {
+        zoomFrom = null;
+        zoomTo = null;
+        selectedIdx = -1;
+        updateZoomBar();
+        drawHeatmap();
+    });
+
+    document.querySelectorAll('.preset-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            const offset = parseInt(this.dataset.offset);
+            const t = Math.floor(Date.now() / 1000) - offset;
+
+            if (zoomFrom !== null && zoomTo !== null) {
+                if (t < zoomFrom || t > zoomTo) {
+                    zoomFrom = null;
+                    zoomTo = null;
+                    updateZoomBar();
+                }
+            }
+
+            const idx = findNearestIdxInData(t);
+            if (idx < 0) return;
+
+            selectedIdx = idx;
+            canvas.focus();
+            const vd = getVisibleData();
+            loadSnapshot(vd[idx].t);
+            drawHeatmap();
+
+            document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            const self = this;
+            setTimeout(() => self.classList.remove('active'), 1200);
+        });
+    });
+
+    function handleTimeInput() {
+        const val = timeInput.value;
+        if (!val) return;
+        const t = inputValToTimestamp(val);
+
+        const fullFrom = heatmapData.length > 0 ? heatmapData[0].t : 0;
+        const fullTo = heatmapData.length > 0 ? heatmapData[heatmapData.length - 1].t : 0;
+        if (t < fullFrom || t > fullTo) {
+            timeInput.classList.add('input-error');
+            setTimeout(() => timeInput.classList.remove('input-error'), 2000);
+            return;
+        }
+
+        if (zoomFrom !== null && zoomTo !== null) {
+            if (t < zoomFrom || t > zoomTo) {
+                zoomFrom = null;
+                zoomTo = null;
+                updateZoomBar();
+            }
+        }
+
+        const idx = findNearestIdxInData(t);
+        if (idx < 0) return;
+
+        selectedIdx = idx;
+        canvas.focus();
+        const vd = getVisibleData();
+        loadSnapshot(vd[idx].t);
+        drawHeatmap();
+    }
+
+    document.getElementById('go-btn').addEventListener('click', handleTimeInput);
+    timeInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') handleTimeInput();
+    });
+
+    function updateTimeInputRange() {
+        if (heatmapData.length === 0) return;
+        timeInput.min = timestampToInputVal(heatmapData[0].t);
+        timeInput.max = timestampToInputVal(heatmapData[heatmapData.length - 1].t);
+    }
+
     async function loadHeatmap() {
         try {
             const step = calculateStep();
@@ -566,6 +968,11 @@ table.process-table td.name-cell{font-weight:500;max-width:280px;overflow:hidden
             if (heatmapData.length > 0) {
                 lastTimestamp = heatmapData[heatmapData.length - 1].t;
             }
+            zoomFrom = null;
+            zoomTo = null;
+            selectedIdx = -1;
+            updateZoomBar();
+            updateTimeInputRange();
             drawHeatmap();
             if (heatmapData.length > 0) {
                 document.getElementById('skeleton').classList.add('hidden');
@@ -573,7 +980,6 @@ table.process-table td.name-cell{font-weight:500;max-width:280px;overflow:hidden
         } catch(e) {}
     }
 
-    // --- Incremental update: fetch new data since last timestamp ---
     async function incrementalUpdate() {
         if (lastTimestamp === 0) return;
         try {
@@ -586,12 +992,12 @@ table.process-table td.name-cell{font-weight:500;max-width:280px;overflow:hidden
                 const cutoff = Math.floor(Date.now() / 1000) - 86400;
                 heatmapData = heatmapData.filter(d => d.t >= cutoff);
                 lastTimestamp = heatmapData[heatmapData.length - 1].t;
+                updateTimeInputRange();
                 drawHeatmap();
             }
         } catch(e) {}
     }
 
-    // --- Load process snapshot for a given timestamp ---
     async function loadSnapshot(t) {
         const loading = document.getElementById('snap-loading');
         const error = document.getElementById('snap-error');
@@ -622,7 +1028,6 @@ table.process-table td.name-cell{font-weight:500;max-width:280px;overflow:hidden
         }
     }
 
-    // --- Render snapshot data into the detail panel ---
     function renderSnapshot(data, reqTime) {
         const content = document.getElementById('snapshot-content');
         content.style.display = 'block';
@@ -645,7 +1050,6 @@ table.process-table td.name-cell{font-weight:500;max-width:280px;overflow:hidden
         memEl.textContent = memVal >= 0 ? memVal.toFixed(1) + '%' : 'N/A';
         memEl.style.color = memVal >= 0 ? (memVal > 80 ? '#f87171' : '#ffe66d') : '';
 
-        // Update stat card progress bars
         const cpuBar = document.getElementById('snap-cpu-bar');
         const memBar = document.getElementById('snap-mem-bar');
         if (cpuVal >= 0) { cpuBar.style.width = Math.min(cpuVal, 100) + '%'; cpuBar.style.background = cpuVal > 75 ? 'linear-gradient(90deg,#e94560,#f87171)' : cpuVal > 50 ? 'linear-gradient(90deg,#ff9f43,#fb923c)' : 'linear-gradient(90deg,#4ecdc4,#38b2ac)'; }
@@ -666,7 +1070,6 @@ table.process-table td.name-cell{font-weight:500;max-width:280px;overflow:hidden
         return (b/1048576).toFixed(1) + ' MB';
     }
 
-    // --- Render process table with spike highlighting ---
     function renderTable() {
         if (!currentSnapshotData) return;
         const tbody = document.getElementById('process-tbody');
@@ -709,7 +1112,6 @@ table.process-table td.name-cell{font-weight:500;max-width:280px;overflow:hidden
         return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
     }
 
-    // --- Metric tab switching ---
     document.getElementById('metric-tabs').addEventListener('click', function(e) {
         if (!e.target.classList.contains('metric-tab')) return;
         document.querySelectorAll('.metric-tab').forEach(t => t.classList.remove('active'));
@@ -718,7 +1120,6 @@ table.process-table td.name-cell{font-weight:500;max-width:280px;overflow:hidden
         drawHeatmap();
     });
 
-    // --- Table column sorting ---
     document.querySelectorAll('.process-table th[data-sort]').forEach(th => {
         th.addEventListener('click', function() {
             const key = this.dataset.sort;
@@ -731,7 +1132,6 @@ table.process-table td.name-cell{font-weight:500;max-width:280px;overflow:hidden
         });
     });
 
-    // --- Poll /api/heatmap for realtime CPU/mem display in header ---
     async function updateRealtime() {
         try {
             if (heatmapData.length > 0) {
@@ -756,7 +1156,6 @@ table.process-table td.name-cell{font-weight:500;max-width:280px;overflow:hidden
         } catch(e) {}
     }
 
-    // --- Initialize: load heatmap, start periodic updates ---
     async function init() {
         await loadHeatmap();
         setInterval(incrementalUpdate, 5000);
@@ -769,4 +1168,5 @@ table.process-table td.name-cell{font-weight:500;max-width:280px;overflow:hidden
 })();
 </script>
 </body>
-</html>)rawliteral";
+</html>
+)rawliteral";
