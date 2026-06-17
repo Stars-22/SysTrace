@@ -134,7 +134,7 @@ canvas#heatmap:focus-visible{box-shadow:0 0 0 2px rgba(78,205,196,.3)}
 .zoom-reset:hover{border-color:var(--brand);color:var(--brand)}
 
 /* ====== Detail Container ====== */
-.detail-container{background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:24px;box-shadow:0 4px 28px rgba(0,0,0,.2)}
+.detail-container{background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:24px;box-shadow:0 4px 28px rgba(0,0,0,.2);position:relative;min-height:200px}
 .no-snapshot{text-align:center;padding:56px 20px}
 .no-snapshot .ns-box{display:inline-block;background:var(--bg-secondary);border:1px dashed var(--border-light);border-radius:16px;padding:32px 40px;margin-bottom:8px}
 .no-snapshot .ns-icon{font-size:36px;margin-bottom:8px;display:block;opacity:.3}
@@ -583,7 +583,7 @@ table.process-table td.name-cell{font-weight:500;max-width:280px;overflow:hidden
             const idx = findNearestIdxInData(t);
             selectedIdx = (idx >= 0) ? idx : 0;
             drawHeatmap();
-            loadSnapshot(t);
+            loadSnapshot(t, true);
         }, seconds * 1000);
     }
 
@@ -1115,11 +1115,26 @@ table.process-table td.name-cell{font-weight:500;max-width:280px;overflow:hidden
         } catch(e) {}
     }
 
-    async function loadSnapshot(t) {
+    async function loadSnapshot(t, silent) {
         const loading = document.getElementById('snap-loading');
         const error = document.getElementById('snap-error');
         const content = document.getElementById('snapshot-content');
         const noSnap = document.getElementById('no-snapshot');
+        const container = document.getElementById('detail-container');
+
+        if (silent) {
+            try {
+                const resp = await fetch(API_BASE + '/api/snapshot?time=' + t);
+                if (!resp.ok) return;
+                const json = await resp.json();
+                renderSnapshot(json, t);
+            } catch(e) {}
+            return;
+        }
+
+        const prevHeight = container.offsetHeight;
+        if (prevHeight > 200) container.style.minHeight = prevHeight + 'px';
+
         loading.style.display = 'block';
         error.style.display = 'none';
         content.style.display = 'none';
@@ -1142,6 +1157,8 @@ table.process-table td.name-cell{font-weight:500;max-width:280px;overflow:hidden
             document.getElementById('error-text').textContent = 'Network error';
             error.style.display = 'flex';
             loading.style.display = 'none';
+        } finally {
+            container.style.minHeight = '';
         }
     }
 
