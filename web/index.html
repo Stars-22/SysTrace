@@ -95,12 +95,13 @@ canvas#heatmap:focus-visible{box-shadow:0 0 0 2px rgba(78,205,196,.3)}
 
 /* ====== Time Controls ====== */
 .time-controls{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:14px;padding:0 4px}
+.time-left{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 .quick-presets{display:flex;gap:4px;flex-wrap:wrap}
 .preset-btn{padding:5px 12px;border:1px solid var(--border);border-radius:8px;background:var(--bg-secondary);color:var(--text-muted);font-size:11px;font-weight:500;cursor:pointer;transition:all .2s;font-family:inherit;white-space:nowrap}
 .preset-btn:hover{border-color:var(--border-light);color:var(--text-primary);background:var(--bg-card)}
 .preset-btn:active{transform:scale(.95)}
 .preset-btn.active{border-color:var(--accent);color:var(--accent);background:rgba(78,205,196,.08)}
-.time-input-group{display:flex;align-items:center;gap:6px;margin-left:auto}
+.time-input-group{display:flex;align-items:center;gap:6px}
 .time-input-group input[type="datetime-local"]{background:var(--bg-secondary);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);padding:5px 10px;font-size:12px;font-family:inherit;outline:none;transition:border-color .2s;min-width:180px}
 .time-input-group input[type="datetime-local"]:focus{border-color:var(--accent)}
 .time-input-group input[type="datetime-local"]::-webkit-calendar-picker-indicator{filter:invert(.7)}
@@ -108,6 +109,14 @@ canvas#heatmap:focus-visible{box-shadow:0 0 0 2px rgba(78,205,196,.3)}
 .go-btn{padding:5px 14px;border:1px solid var(--accent);border-radius:8px;background:rgba(78,205,196,.1);color:var(--accent);font-size:11px;font-weight:600;cursor:pointer;transition:all .2s;font-family:inherit}
 .go-btn:hover{background:rgba(78,205,196,.2)}
 .go-btn:active{transform:scale(.95)}
+.time-right{display:flex;align-items:center;gap:6px;margin-left:auto}
+.refresh-label{font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.8px;white-space:nowrap}
+.refresh-btns{display:flex;gap:4px}
+.refresh-btn{padding:5px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg-secondary);color:var(--text-muted);font-size:11px;font-weight:500;cursor:pointer;transition:all .2s;font-family:inherit;white-space:nowrap}
+.refresh-btn:hover:not(.disabled){border-color:var(--border-light);color:var(--text-primary);background:var(--bg-card)}
+.refresh-btn:active:not(.disabled){transform:scale(.95)}
+.refresh-btn.active{border-color:var(--accent);color:var(--accent);background:rgba(78,205,196,.08)}
+.refresh-btn.disabled{opacity:.35;cursor:not-allowed;pointer-events:none}
 
 /* ====== Zoom Bar ====== */
 .zoom-bar{display:none;align-items:center;gap:10px;margin-top:8px;padding:6px 14px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:8px;font-size:11px}
@@ -211,8 +220,7 @@ table.process-table td.name-cell{font-weight:500;max-width:280px;overflow:hidden
     .sys-stats{grid-template-columns:1fr 1fr}
     .section-header{flex-direction:column;gap:8px;align-items:flex-start}
     .time-controls{flex-direction:column;align-items:flex-start}
-    .time-input-group{margin-left:0;width:100%}
-    .time-input-group input[type="datetime-local"]{flex:1;min-width:0}
+    .time-right{margin-left:0}
 }
 </style>
 </head>
@@ -277,17 +285,30 @@ table.process-table td.name-cell{font-weight:500;max-width:280px;overflow:hidden
     <button class="zoom-reset" id="zoom-reset">Reset Zoom</button>
   </div>
   <div class="time-controls" id="time-controls">
-    <div class="quick-presets">
-      <button class="preset-btn" data-offset="0">Now</button>
-      <button class="preset-btn" data-offset="60">1m</button>
-      <button class="preset-btn" data-offset="300">5m</button>
-      <button class="preset-btn" data-offset="1800">30m</button>
-      <button class="preset-btn" data-offset="3600">1h</button>
-      <button class="preset-btn" data-offset="21600">6h</button>
+    <div class="time-left">
+      <div class="quick-presets">
+        <button class="preset-btn" data-offset="0">Now</button>
+        <button class="preset-btn" data-offset="60">1m</button>
+        <button class="preset-btn" data-offset="300">5m</button>
+        <button class="preset-btn" data-offset="1800">30m</button>
+        <button class="preset-btn" data-offset="3600">1h</button>
+        <button class="preset-btn" data-offset="21600">6h</button>
+      </div>
+      <div class="time-input-group">
+        <input type="datetime-local" id="time-input" step="1">
+        <button class="go-btn" id="go-btn">Go</button>
+      </div>
     </div>
-    <div class="time-input-group">
-      <input type="datetime-local" id="time-input" step="1">
-      <button class="go-btn" id="go-btn">Go</button>
+    <div class="time-right">
+      <span class="refresh-label">Refresh</span>
+      <div class="refresh-btns">
+        <button class="refresh-btn" data-interval="1">1s</button>
+        <button class="refresh-btn" data-interval="2">2s</button>
+        <button class="refresh-btn" data-interval="5">5s</button>
+        <button class="refresh-btn" data-interval="60">1m</button>
+        <button class="refresh-btn" data-interval="300">5m</button>
+        <button class="refresh-btn" data-interval="600">10m</button>
+      </div>
     </div>
   </div>
 </div>
@@ -379,6 +400,11 @@ table.process-table td.name-cell{font-weight:500;max-width:280px;overflow:hidden
     const DRAG_THRESHOLD = 5;
     const CLICK_TOLERANCE = 10;
     const MIN_ZOOM_SECONDS = 30;
+
+    let currentViewMode = 'now';
+    let currentOffset = 0;
+    let refreshInterval = 0;
+    let refreshTimer = null;
 
     const canvas = document.getElementById('heatmap');
     const ctx = canvas.getContext('2d');
@@ -494,6 +520,51 @@ table.process-table td.name-cell{font-weight:500;max-width:280px;overflow:hidden
             if (dist < bestDist) { bestDist = dist; bestIdx = i; }
         }
         return bestIdx;
+    }
+
+    function getCurrentTimestamp() {
+        return Math.floor(Date.now() / 1000) - currentOffset;
+    }
+
+    function setViewMode(mode, offset) {
+        currentViewMode = mode;
+        currentOffset = offset || 0;
+        updateRefreshBtnsState();
+    }
+
+    function updateRefreshBtnsState() {
+        const isNow = (currentViewMode === 'now');
+        document.querySelectorAll('.refresh-btn').forEach(function(btn) {
+            if (isNow) {
+                btn.classList.remove('disabled');
+            } else {
+                btn.classList.add('disabled');
+            }
+        });
+        if (!isNow) {
+            clearRefresh();
+        }
+    }
+
+    function setRefresh(seconds) {
+        clearRefresh();
+        if (seconds <= 0 || currentViewMode !== 'now') return;
+        refreshInterval = seconds;
+        document.querySelectorAll('.refresh-btn').forEach(function(btn) {
+            btn.classList.toggle('active', parseInt(btn.dataset.interval) === seconds);
+        });
+        refreshTimer = setInterval(function() {
+            if (currentViewMode !== 'now') { clearRefresh(); return; }
+            loadSnapshot(getCurrentTimestamp());
+        }, seconds * 1000);
+    }
+
+    function clearRefresh() {
+        refreshInterval = 0;
+        if (refreshTimer) { clearInterval(refreshTimer); refreshTimer = null; }
+        document.querySelectorAll('.refresh-btn').forEach(function(btn) {
+            btn.classList.remove('active');
+        });
     }
 
     function drawHeatmap() {
@@ -773,7 +844,10 @@ table.process-table td.name-cell{font-weight:500;max-width:280px;overflow:hidden
         selectedIdx = idx;
         canvas.focus();
         const vd = getVisibleData();
-        loadSnapshot(vd[idx].t);
+        const t = vd[idx].t;
+        setViewMode('fixed');
+        timeInput.value = timestampToInputVal(t);
+        loadSnapshot(t);
         drawHeatmap();
     });
 
@@ -852,15 +926,24 @@ table.process-table td.name-cell{font-weight:500;max-width:280px;overflow:hidden
             const step = e.shiftKey ? 10 : 1;
             if (selectedIdx < 0) selectedIdx = 0;
             selectedIdx = Math.max(0, Math.min(selectedIdx + dir * step, vd.length - 1));
-            loadSnapshot(vd[selectedIdx].t);
+            const t = vd[selectedIdx].t;
+            setViewMode('fixed');
+            timeInput.value = timestampToInputVal(t);
+            loadSnapshot(t);
             drawHeatmap();
         } else if (e.key === 'Home') {
             selectedIdx = 0;
-            loadSnapshot(vd[0].t);
+            const t = vd[0].t;
+            setViewMode('fixed');
+            timeInput.value = timestampToInputVal(t);
+            loadSnapshot(t);
             drawHeatmap();
         } else if (e.key === 'End') {
             selectedIdx = vd.length - 1;
-            loadSnapshot(vd[vd.length - 1].t);
+            const t = vd[vd.length - 1].t;
+            setViewMode('fixed');
+            timeInput.value = timestampToInputVal(t);
+            loadSnapshot(t);
             drawHeatmap();
         } else {
             handled = false;
@@ -888,7 +971,8 @@ table.process-table td.name-cell{font-weight:500;max-width:280px;overflow:hidden
     document.querySelectorAll('.preset-btn').forEach(function(btn) {
         btn.addEventListener('click', function() {
             const offset = parseInt(this.dataset.offset);
-            const t = Math.floor(Date.now() / 1000) - offset;
+            setViewMode('now', offset);
+            const t = getCurrentTimestamp();
 
             if (zoomFrom !== null && zoomTo !== null) {
                 if (t < zoomFrom || t > zoomTo) {
@@ -899,9 +983,9 @@ table.process-table td.name-cell{font-weight:500;max-width:280px;overflow:hidden
             }
 
             const idx = findNearestIdxInData(t);
-
             selectedIdx = (idx >= 0) ? idx : 0;
             canvas.focus();
+            timeInput.value = timestampToInputVal(t);
             loadSnapshot(t);
             drawHeatmap();
 
@@ -909,6 +993,22 @@ table.process-table td.name-cell{font-weight:500;max-width:280px;overflow:hidden
             this.classList.add('active');
             const self = this;
             setTimeout(() => self.classList.remove('active'), 1200);
+
+            if (refreshInterval > 0) {
+                setRefresh(refreshInterval);
+            }
+        });
+    });
+
+    document.querySelectorAll('.refresh-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            if (this.classList.contains('disabled')) return;
+            const seconds = parseInt(this.dataset.interval);
+            if (refreshInterval === seconds) {
+                clearRefresh();
+                return;
+            }
+            setRefresh(seconds);
         });
     });
 
@@ -924,6 +1024,8 @@ table.process-table td.name-cell{font-weight:500;max-width:280px;overflow:hidden
             setTimeout(() => timeInput.classList.remove('input-error'), 2000);
             return;
         }
+
+        setViewMode('fixed');
 
         if (zoomFrom !== null && zoomTo !== null) {
             if (t < zoomFrom || t > zoomTo) {
@@ -1157,6 +1259,7 @@ table.process-table td.name-cell{font-weight:500;max-width:280px;overflow:hidden
         setInterval(incrementalUpdate, 5000);
         setInterval(updateRealtime, 2000);
         updateRealtime();
+        setViewMode('now', 0);
     }
 
     window.addEventListener('resize', function() { drawHeatmap(); });
