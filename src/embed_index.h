@@ -1199,7 +1199,7 @@ table.process-table td.name-cell{font-weight:500;max-width:280px;overflow:hidden
 
         currentSnapshotData = data.processes;
         renderTable();
-        prevSnapshot = data.processes;
+        prevSnapshot = data.processes.map(p => ({pid: p.pid, name: p.name, cpu: p.cpu, mem: p.mem}));
     }
 
     function formatBytes(b) {
@@ -1228,8 +1228,10 @@ table.process-table td.name-cell{font-weight:500;max-width:280px;overflow:hidden
                 if (prev) {
                     const cpuDelta = p.cpu - prev.cpu;
                     const memDelta = p.mem - prev.mem;
-                    if (cpuDelta > 10) { spikeClass = 'spike-cpu'; badge += '<span class="badge cpu-spike">&#9650; +' + cpuDelta.toFixed(1) + '%</span>'; }
-                    if (memDelta > 50) { spikeClass = 'spike-mem'; badge += '<span class="badge mem-spike">&#9650; +' + memDelta.toFixed(0) + 'MB</span>'; }
+                    if (cpuDelta > 3) { spikeClass = 'spike-cpu'; badge += '<span class="badge cpu-spike">&#9650; +' + cpuDelta.toFixed(1) + '%</span>'; }
+                    else if (cpuDelta < -3) { badge += '<span class="badge cpu-spike">&#9660; ' + cpuDelta.toFixed(1) + '%</span>'; }
+                    if (memDelta > 10) { if (!spikeClass) spikeClass = 'spike-mem'; badge += '<span class="badge mem-spike">&#9650; +' + memDelta.toFixed(0) + 'MB</span>'; }
+                    else if (memDelta < -10) { badge += '<span class="badge mem-spike">&#9660; ' + memDelta.toFixed(0) + 'MB</span>'; }
                 }
             }
 
