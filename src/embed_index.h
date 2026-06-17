@@ -110,6 +110,9 @@ canvas#heatmap:focus-visible{box-shadow:0 0 0 2px rgba(78,205,196,.3)}
 .time-input-group input[type="datetime-local"]{background:var(--bg-secondary);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);padding:5px 10px;font-size:12px;font-family:inherit;outline:none;transition:border-color .2s;min-width:180px}
 .time-input-group input[type="datetime-local"]:focus{border-color:var(--accent)}
 .time-input-group input[type="datetime-local"]::-webkit-calendar-picker-indicator{filter:invert(.7)}
+.time-input-group input[type="datetime-local"]::-webkit-datetime-edit{color:var(--text-primary)}
+.time-input-group input[type="datetime-local"]::-webkit-date-and-time-value{color:var(--text-primary)}
+.time-input-group input[type="datetime-local"]:invalid{color:var(--text-muted)}
 .time-input-group input[type="datetime-local"].input-error{border-color:var(--brand)!important}
 .go-btn{padding:5px 14px;border:1px solid var(--accent);border-radius:8px;background:rgba(78,205,196,.1);color:var(--accent);font-size:11px;font-weight:600;cursor:pointer;transition:all .2s;font-family:inherit}
 .go-btn:hover{background:rgba(78,205,196,.2)}
@@ -300,7 +303,7 @@ table.process-table td.name-cell{font-weight:500;max-width:280px;overflow:hidden
         <button class="preset-btn" data-offset="21600">6h</button>
       </div>
       <div class="time-input-group">
-        <input type="datetime-local" id="time-input" step="1">
+        <input type="datetime-local" id="time-input" step="1" placeholder="yyyy/mm/dd hh:mm:ss">
         <button class="go-btn" id="go-btn">Go</button>
       </div>
     </div>
@@ -538,6 +541,9 @@ table.process-table td.name-cell{font-weight:500;max-width:280px;overflow:hidden
         currentOffset = offset || 0;
         updatePresetHighlight();
         updateRefreshBtnsState();
+        if (currentViewMode === 'now') {
+            timeInput.value = '';
+        }
     }
 
     function updatePresetHighlight() {
@@ -574,7 +580,6 @@ table.process-table td.name-cell{font-weight:500;max-width:280px;overflow:hidden
         refreshTimer = setInterval(function() {
             if (currentViewMode !== 'now') { clearRefresh(); return; }
             const t = getCurrentTimestamp();
-            timeInput.value = timestampToInputVal(t);
             const idx = findNearestIdxInData(t);
             selectedIdx = (idx >= 0) ? idx : 0;
             drawHeatmap();
@@ -1008,7 +1013,6 @@ table.process-table td.name-cell{font-weight:500;max-width:280px;overflow:hidden
             const idx = findNearestIdxInData(t);
             selectedIdx = (idx >= 0) ? idx : 0;
             canvas.focus();
-            timeInput.value = timestampToInputVal(t);
             loadSnapshot(t);
             drawHeatmap();
 
