@@ -11,7 +11,7 @@ jobs:
     runs-on: windows-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -29,3 +29,15 @@ jobs:
 
       - name: Test help flag
         run: ./build/SysTrace.exe --help
+
+      - name: Upload SysTrace.exe
+        uses: actions/upload-artifact@v4
+        with:
+          name: SysTrace
+          path: build/SysTrace.exe
+
+      - name: Upload embed_index.h
+        uses: actions/upload-artifact@v4
+        with:
+          name: embed_index_header
+          path: src/embed_index.h
