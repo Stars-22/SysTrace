@@ -75,11 +75,6 @@ canvas#heatmap{width:100%;height:180px;display:block;cursor:crosshair;border-rad
 canvas#heatmap:focus{outline:none}
 canvas#heatmap:focus-visible{box-shadow:0 0 0 2px rgba(78,205,196,.3)}
 
-/* ====== Crosshair ====== */
-.crosshair-v{position:absolute;top:8px;bottom:38px;width:1px;background:rgba(255,255,255,.18);pointer-events:none;z-index:3;display:none;filter:drop-shadow(0 0 2px rgba(255,255,255,.3))}
-.crosshair-v::before{content:'';position:absolute;top:0;left:-3px;width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.6);box-shadow:0 0 6px rgba(255,255,255,.4)}
-.crosshair-h{position:absolute;left:8px;right:8px;height:1px;background:rgba(255,255,255,.06);pointer-events:none;z-index:2;display:none}
-
 /* ====== Skeleton Loading ====== */
 .skeleton-overlay{position:absolute;inset:20px 20px 14px;border-radius:8px;overflow:hidden;pointer-events:none;z-index:2;display:flex;flex-direction:column;gap:6px;padding:12px 0}
 .skeleton-overlay.hidden{display:none}
@@ -329,8 +324,6 @@ table.process-table td.disk-cell{font-variant-numeric:tabular-nums;font-size:12p
       <div class="skel-bar"></div><div class="skel-bar"></div><div class="skel-bar"></div><div class="skel-bar"></div><div class="skel-bar"></div><div class="skel-bar"></div>
     </div>
     <canvas id="heatmap" tabindex="0"></canvas>
-    <div class="crosshair-v" id="crosshair-v"></div>
-    <div class="crosshair-h" id="crosshair-h"></div>
     <div class="tooltip" id="tooltip"></div>
     <div class="legend">
       <div class="legend-item"><div class="swatch" style="background:linear-gradient(90deg,#4ecdc4,#38b2ac)"></div>Low</div>
@@ -479,8 +472,6 @@ table.process-table td.disk-cell{font-variant-numeric:tabular-nums;font-size:12p
     const canvas = document.getElementById('heatmap');
     const ctx = canvas.getContext('2d');
     const tooltip = document.getElementById('tooltip');
-    const crosshairV = document.getElementById('crosshair-v');
-    const crosshairH = document.getElementById('crosshair-h');
     const zoomBar = document.getElementById('zoom-bar');
     const zoomRangeEl = document.getElementById('zoom-range');
     const timeInput = document.getElementById('time-input');
@@ -799,7 +790,7 @@ table.process-table td.disk-cell{font-variant-numeric:tabular-nums;font-size:12p
 
     function showTooltip(e) {
         const vd = getVisibleData();
-        if (vd.length === 0) { tooltip.style.display = 'none'; crosshairV.style.display = 'none'; return; }
+        if (vd.length === 0) { tooltip.style.display = 'none'; return; }
         const rect = canvas.getBoundingClientRect();
         const mx = e.clientX - rect.left;
         const cw = canvas.clientWidth;
@@ -809,7 +800,6 @@ table.process-table td.disk-cell{font-variant-numeric:tabular-nums;font-size:12p
         const idx = Math.floor((mx - ml) / bw);
         if (idx < 0 || idx >= vd.length) {
             tooltip.style.display = 'none';
-            crosshairV.style.display = 'none';
             hoveredIdx = -1;
             drawHeatmap();
             return;
@@ -817,12 +807,6 @@ table.process-table td.disk-cell{font-variant-numeric:tabular-nums;font-size:12p
 
         hoveredIdx = idx;
         drawHeatmap();
-
-        crosshairV.style.display = 'block';
-        const blockX = ml + idx * bw + bw / 2;
-        crosshairV.style.left = (rect.left + blockX) + 'px';
-        crosshairV.style.top = (rect.top + 10) + 'px';
-        crosshairV.style.height = '140px';
 
         const d = vd[idx];
         const cpuV = d.cpu >= 0 ? d.cpu : -1;
@@ -866,7 +850,6 @@ table.process-table td.disk-cell{font-variant-numeric:tabular-nums;font-size:12p
             const rect = canvas.getBoundingClientRect();
             dragCurrentX = e.clientX - rect.left;
             tooltip.style.display = 'none';
-            crosshairV.style.display = 'none';
             hoveredIdx = -1;
             drawHeatmap();
             return;
@@ -878,7 +861,6 @@ table.process-table td.disk-cell{font-variant-numeric:tabular-nums;font-size:12p
                 hasDragged = true;
                 dragCurrentX = cx;
                 tooltip.style.display = 'none';
-                crosshairV.style.display = 'none';
                 hoveredIdx = -1;
                 drawHeatmap();
                 return;
@@ -951,7 +933,6 @@ table.process-table td.disk-cell{font-variant-numeric:tabular-nums;font-size:12p
             hasDragged = false;
         }
         tooltip.style.display = 'none';
-        crosshairV.style.display = 'none';
         hoveredIdx = -1;
         drawHeatmap();
     });

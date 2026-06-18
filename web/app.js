@@ -27,8 +27,6 @@
     const canvas = document.getElementById('heatmap');
     const ctx = canvas.getContext('2d');
     const tooltip = document.getElementById('tooltip');
-    const crosshairV = document.getElementById('crosshair-v');
-    const crosshairH = document.getElementById('crosshair-h');
     const zoomBar = document.getElementById('zoom-bar');
     const zoomRangeEl = document.getElementById('zoom-range');
     const timeInput = document.getElementById('time-input');
@@ -347,7 +345,7 @@
 
     function showTooltip(e) {
         const vd = getVisibleData();
-        if (vd.length === 0) { tooltip.style.display = 'none'; crosshairV.style.display = 'none'; return; }
+        if (vd.length === 0) { tooltip.style.display = 'none'; return; }
         const rect = canvas.getBoundingClientRect();
         const mx = e.clientX - rect.left;
         const cw = canvas.clientWidth;
@@ -357,7 +355,6 @@
         const idx = Math.floor((mx - ml) / bw);
         if (idx < 0 || idx >= vd.length) {
             tooltip.style.display = 'none';
-            crosshairV.style.display = 'none';
             hoveredIdx = -1;
             drawHeatmap();
             return;
@@ -365,12 +362,6 @@
 
         hoveredIdx = idx;
         drawHeatmap();
-
-        crosshairV.style.display = 'block';
-        const blockX = ml + idx * bw + bw / 2;
-        crosshairV.style.left = (rect.left + blockX) + 'px';
-        crosshairV.style.top = (rect.top + 10) + 'px';
-        crosshairV.style.height = '140px';
 
         const d = vd[idx];
         const cpuV = d.cpu >= 0 ? d.cpu : -1;
@@ -414,7 +405,6 @@
             const rect = canvas.getBoundingClientRect();
             dragCurrentX = e.clientX - rect.left;
             tooltip.style.display = 'none';
-            crosshairV.style.display = 'none';
             hoveredIdx = -1;
             drawHeatmap();
             return;
@@ -426,7 +416,6 @@
                 hasDragged = true;
                 dragCurrentX = cx;
                 tooltip.style.display = 'none';
-                crosshairV.style.display = 'none';
                 hoveredIdx = -1;
                 drawHeatmap();
                 return;
@@ -499,7 +488,6 @@
             hasDragged = false;
         }
         tooltip.style.display = 'none';
-        crosshairV.style.display = 'none';
         hoveredIdx = -1;
         drawHeatmap();
     });
