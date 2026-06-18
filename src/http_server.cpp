@@ -1,5 +1,6 @@
 // http_server.cpp - HTTP server route handlers and lifecycle management
 #include "http_server.h"
+#include "persistence.h"
 #include "json_serializer.h"
 #include "embed_index.h"
 #include <cstdio>
@@ -13,7 +14,14 @@ SysTraceServer::SysTraceServer(ServerConfig config)
     CollectorConfig coll_cfg;
     coll_cfg.interval_ms = config_.interval_ms;
     coll_cfg.max_processes = config_.max_processes;
-    collector_ = std::make_unique<Collector>(*buffer_, coll_cfg);
+
+    if (config_.persist_enabled) {
+        persistence_ = std::make_unique<Persistence>(
+            config_.data_dir, config_.interval_ms,
+            config_.heatmap_capacity, config_.snapshot_capacity);
+    }
+
+    collector_ = std::make_unique<Collector>(*buffer_, coll_cfg, persistence_.get());
 }
 
 SysTraceServer::~SysTraceServer() {
@@ -28,6 +36,17 @@ bool SysTraceServer::start() {
         {"Access-Control-Allow-Methods", "GET, OPTIONS"},
         {"Access-Control-Allow-Headers", "Content-Type"}
     });
+
+    if (persistence_) {
+        if (persistence_->open_files()) {
+            fprintf(stderr, "[SysTrace] Recovering data from disk...\n");
+            persistence_->recover(*buffer_);
+            persistence_->trim();
+        } else {
+            fprintf(stderr, "[SysTrace] Warning: failed to open persistence files, continuing without persistence\n");
+            persistence_.reset();
+        }
+    }
 
     collector_->start();
 

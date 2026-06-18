@@ -74,6 +74,14 @@ public:
         snapshot_data_.push_back(std::move(snapshot));
     }
 
+    void push_snapshot_only(SystemSnapshot snapshot) {
+        std::unique_lock lock(mutex_);
+        if (snapshot_data_.size() >= snapshot_capacity_) {
+            snapshot_data_.pop_front();
+        }
+        snapshot_data_.push_back(std::move(snapshot));
+    }
+
     std::vector<HeatmapEntry> get_heatmap_range(time_t from, time_t to) const {
         std::shared_lock lock(mutex_);
         std::vector<HeatmapEntry> result;

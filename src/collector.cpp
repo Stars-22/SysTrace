@@ -1,5 +1,6 @@
 // collector.cpp - System resource data collection implementation
 #include "collector.h"
+#include "persistence.h"
 
 // Windows headers must be included in a specific order to avoid conflicts
 #include <winsock2.h>
@@ -16,8 +17,8 @@
 #pragma comment(lib, "pdh.lib")
 #pragma comment(lib, "iphlpapi.lib")
 
-Collector::Collector(RingBuffer& buffer, CollectorConfig config)
-    : buffer_(buffer), config_(std::move(config)) {
+Collector::Collector(RingBuffer& buffer, CollectorConfig config, Persistence* persist)
+    : buffer_(buffer), config_(std::move(config)), persistence_(persist) {
     // PDH query will be initialized lazily in query_disk_io()
 }
 
@@ -381,6 +382,20 @@ void Collector::collect_once() {
         snap.net_up_bps   = net_up_bps;
         snap.net_down_bps = net_down_bps;
         snap.processes      = std::move(processes);
+
+        if (persistence_) {
+            HeatmapEntry he;
+            he.timestamp      = snap.timestamp;
+            he.cpu_pct        = snap.cpu_pct;
+            he.mem_pct        = snap.mem_pct;
+            he.disk_read_bps  = snap.disk_read_bps;
+            he.disk_write_bps = snap.disk_write_bps;
+            he.net_up_bps     = snap.net_up_bps;
+            he.net_down_bps   = snap.net_down_bps;
+            persistence_->write_heatmap(he);
+            persistence_->write_snapshot(snap);
+            persistence_->flush_if_needed(timestamp);
+        }
 
         buffer_.push(std::move(snap));
     } catch (const std::exception& e) {

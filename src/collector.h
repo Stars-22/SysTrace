@@ -14,9 +14,12 @@ struct CollectorConfig {
     size_t max_processes = 500;
 };
 
+class Persistence;
+
 class Collector {
 public:
-    explicit Collector(RingBuffer& buffer, CollectorConfig config = {});
+    explicit Collector(RingBuffer& buffer, CollectorConfig config = {},
+                       Persistence* persist = nullptr);
     ~Collector();
 
     void start();
@@ -68,6 +71,8 @@ private:
 
     std::unordered_map<DWORD, ProcessCpuContext> proc_contexts_;
     std::unordered_map<std::string, uint8_t> name_pool_;
+
+    Persistence* persistence_ = nullptr;
 
     bool query_disk_io(double& read_bps, double& write_bps);
     bool query_network(double& up_bps, double& down_bps);

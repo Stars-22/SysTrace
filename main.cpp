@@ -20,9 +20,12 @@ struct Config {
     int port = 26616;
     int interval_ms = 1000;
     size_t heatmap_capacity = 86400;
-    size_t snapshot_capacity = 3600;
+    size_t snapshot_capacity = 7200;
     size_t max_processes = 500;
     std::string log_level = "warn";
+    bool persist = true;
+    std::string data_dir;
+    int flush_interval_ms = 10000;
 };
 
 static void print_help() {
@@ -32,9 +35,12 @@ static void print_help() {
     printf("  --port <int>              HTTP server port (default: 26616)\n");
     printf("  --interval <int>          Collection interval in ms (default: 1000)\n");
     printf("  --heatmap-capacity <int>  Heatmap buffer capacity (default: 86400)\n");
-    printf("  --snapshot-capacity <int> Snapshot buffer capacity (default: 3600)\n");
+    printf("  --snapshot-capacity <int> Snapshot buffer capacity (default: 7200)\n");
     printf("  --max-processes <int>     Max processes per snapshot (default: 500)\n");
     printf("  --log-level <string>      Log level: debug|info|warn|error (default: warn)\n");
+    printf("  --no-persist              Disable disk persistence (memory-only mode)\n");
+    printf("  --data-dir <path>         Data file directory (default: exe directory)\n");
+    printf("  --flush-interval <int>    Disk flush interval in ms (default: 10000)\n");
     printf("  --help                    Show this help\n");
     printf("  --version                 Show version\n\n");
     printf("Open http://localhost:<port> in your browser to view the heatmap.\n");
@@ -57,6 +63,12 @@ static Config parse_args(int argc, char* argv[]) {
             cfg.max_processes = std::stoul(argv[++i]);
         } else if (arg == "--log-level" && i + 1 < argc) {
             cfg.log_level = argv[++i];
+        } else if (arg == "--no-persist") {
+            cfg.persist = false;
+        } else if (arg == "--data-dir" && i + 1 < argc) {
+            cfg.data_dir = argv[++i];
+        } else if (arg == "--flush-interval" && i + 1 < argc) {
+            cfg.flush_interval_ms = std::stoi(argv[++i]);
         } else if (arg == "--help") {
             print_help();
             exit(0);
@@ -91,6 +103,9 @@ int main(int argc, char* argv[]) {
     srv_cfg.heatmap_capacity = cfg.heatmap_capacity;
     srv_cfg.snapshot_capacity = cfg.snapshot_capacity;
     srv_cfg.max_processes = cfg.max_processes;
+    srv_cfg.persist_enabled = cfg.persist;
+    srv_cfg.data_dir = cfg.data_dir;
+    srv_cfg.flush_interval_ms = cfg.flush_interval_ms;
 
     SysTraceServer server(srv_cfg);
     g_server = &server;

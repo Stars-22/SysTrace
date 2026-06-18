@@ -15,6 +15,7 @@ set(SOURCES
     src/collector.cpp
     src/http_server.cpp
     src/json_serializer.cpp
+    src/persistence.cpp
 )
 
 include_directories(
