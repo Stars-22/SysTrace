@@ -26,7 +26,7 @@ struct Config {
 };
 
 static void print_help() {
-    printf("SysTrace v1.2.0-dev - Lightweight System Resource History Retrospector\n\n");
+    printf("SysTrace v1.1.0-dev - Lightweight System Resource History Retrospector\n\n");
     printf("Usage: SysTrace [OPTIONS]\n\n");
     printf("Options:\n");
     printf("  --port <int>              HTTP server port (default: 26616)\n");
@@ -61,7 +61,7 @@ static Config parse_args(int argc, char* argv[]) {
             print_help();
             exit(0);
         } else if (arg == "--version") {
-            printf("SysTrace v1.2.0-dev\n");
+            printf("SysTrace v1.1.0-dev\n");
             exit(0);
         }
     }
