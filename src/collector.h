@@ -44,6 +44,9 @@ private:
         std::string name;
         uint64_t prev_kernel_time = 0;
         uint64_t prev_user_time   = 0;
+        uint64_t prev_read_bytes  = 0;
+        uint64_t prev_write_bytes = 0;
+        bool has_io_baseline      = false;
     };
 
     SystemCpuSample prev_sys_cpu_{};

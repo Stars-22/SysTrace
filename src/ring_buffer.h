@@ -17,8 +17,10 @@ typedef unsigned long DWORD;
 struct ProcessInfo {
     DWORD       pid     = 0;
     std::string name;
-    double      cpu_pct = 0.0;
-    double      mem_mb  = 0.0;
+    double      cpu_pct         = 0.0;
+    double      mem_mb          = 0.0;
+    double      disk_read_bps   = -1.0;
+    double      disk_write_bps  = -1.0;
 };
 
 struct HeatmapEntry {

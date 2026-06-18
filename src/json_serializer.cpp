@@ -94,13 +94,15 @@ std::string serialize_snapshot(const SystemSnapshot& snap, time_t requested_time
 
     for (size_t i = 0; i < snap.processes.size(); ++i) {
         const auto& p = snap.processes[i];
-        char entry[512];
+        char entry[640];
         snprintf(entry, sizeof(entry),
-            R"({"pid":%lu,"name":"%s","cpu":%s,"mem":%s})",
+            R"({"pid":%lu,"name":"%s","cpu":%s,"mem":%s,"dr":%s,"dw":%s})",
             static_cast<unsigned long>(p.pid),
             escape(p.name).c_str(),
             format_double(p.cpu_pct).c_str(),
-            format_double(p.mem_mb).c_str());
+            format_double(p.mem_mb).c_str(),
+            format_double(p.disk_read_bps).c_str(),
+            format_double(p.disk_write_bps).c_str());
 
         if (i > 0) json += ",";
         json += entry;
@@ -136,13 +138,15 @@ std::string serialize_aggregate_snapshot(double cpu, double mem, double dr, doub
 
     for (size_t i = 0; i < earliest_snap.processes.size(); ++i) {
         const auto& p = earliest_snap.processes[i];
-        char entry[512];
+        char entry[640];
         snprintf(entry, sizeof(entry),
-            R"({"pid":%lu,"name":"%s","cpu":%s,"mem":%s})",
+            R"({"pid":%lu,"name":"%s","cpu":%s,"mem":%s,"dr":%s,"dw":%s})",
             static_cast<unsigned long>(p.pid),
             escape(p.name).c_str(),
             format_double(p.cpu_pct).c_str(),
-            format_double(p.mem_mb).c_str());
+            format_double(p.mem_mb).c_str(),
+            format_double(p.disk_read_bps).c_str(),
+            format_double(p.disk_write_bps).c_str());
 
         if (i > 0) json += ",";
         json += entry;

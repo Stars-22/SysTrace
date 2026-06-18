@@ -255,7 +255,28 @@ void Collector::collect_once() {
                                 ctx_it->second.prev_user_time   = curr_user;
                                 ctx_it->second.name = info.name;
                             } else {
-                                proc_contexts_[pid] = {pid, info.name, curr_kernel, curr_user};
+                                proc_contexts_[pid] = {pid, info.name, curr_kernel, curr_user, 0, 0, false};
+                            }
+                        }
+
+                        // Process Disk IO
+                        IO_COUNTERS io_counters;
+                        if (GetProcessIoCounters(hProcess, &io_counters)) {
+                            uint64_t curr_read  = io_counters.ReadTransferCount;
+                            uint64_t curr_write = io_counters.WriteTransferCount;
+                            auto io_it = proc_contexts_.find(pid);
+                            if (io_it != proc_contexts_.end() && io_it->second.has_io_baseline) {
+                                double interval_sec = config_.interval_ms / 1000.0;
+                                uint64_t delta_read  = curr_read  - io_it->second.prev_read_bytes;
+                                uint64_t delta_write = curr_write - io_it->second.prev_write_bytes;
+                                info.disk_read_bps  = static_cast<double>(delta_read)  / interval_sec;
+                                info.disk_write_bps = static_cast<double>(delta_write) / interval_sec;
+                                io_it->second.prev_read_bytes  = curr_read;
+                                io_it->second.prev_write_bytes = curr_write;
+                            } else if (io_it != proc_contexts_.end()) {
+                                io_it->second.prev_read_bytes  = curr_read;
+                                io_it->second.prev_write_bytes = curr_write;
+                                io_it->second.has_io_baseline   = true;
                             }
                         }
 

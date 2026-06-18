@@ -191,6 +191,7 @@ table.process-table tbody tr.spike-mem{background:rgba(255,159,67,.06);border-le
 table.process-table tbody tr.spike-mem:hover{background:rgba(255,159,67,.12)!important}
 table.process-table td.pid-cell{color:var(--text-muted);font-size:11px;font-family:'SF Mono','Consolas','Menlo',monospace}
 table.process-table td.name-cell{font-weight:500;max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+table.process-table td.disk-cell{font-variant-numeric:tabular-nums;font-size:12px;color:var(--text-secondary);white-space:nowrap}
 .cpu-bar-wrap{display:inline-flex;align-items:center;gap:8px;min-width:130px}
 .cpu-bar-track{flex:1;height:5px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden;position:relative}
 .cpu-bar{display:block;height:100%;border-radius:3px;min-width:2px;transition:width .4s ease}
@@ -366,8 +367,10 @@ table.process-table td.name-cell{font-weight:500;max-width:280px;overflow:hidden
               <tr>
                 <th data-sort="cpu">CPU% <span class="sort-arrow">&#9660;</span></th>
                 <th data-sort="mem">Memory <span class="sort-arrow">&#9650;</span></th>
+                <th data-sort="dr">Disk R <span class="sort-arrow">&#9650;</span></th>
+                <th data-sort="dw">Disk W <span class="sort-arrow">&#9650;</span></th>
                 <th data-sort="pid">PID <span class="sort-arrow">&#9650;</span></th>
-                <th>Name</th>
+                <th data-sort="name">Name <span class="sort-arrow">&#9650;</span></th>
                 <th style="min-width:160px">Status</th>
               </tr>
             </thead>
@@ -1201,7 +1204,7 @@ table.process-table td.name-cell{font-weight:500;max-width:280px;overflow:hidden
 
         currentSnapshotData = data.processes;
         renderTable();
-        prevSnapshot = data.processes.map(p => ({pid: p.pid, name: p.name, cpu: p.cpu, mem: p.mem}));
+        prevSnapshot = data.processes.map(p => ({pid: p.pid, name: p.name, cpu: p.cpu, mem: p.mem, dr: p.dr, dw: p.dw}));
     }
 
     function formatBytes(b) {
@@ -1218,6 +1221,15 @@ table.process-table td.name-cell{font-weight:500;max-width:280px;overflow:hidden
         procs.sort((a, b) => {
             if (sortKey === 'cpu') return sortDesc ? b.cpu - a.cpu : a.cpu - b.cpu;
             if (sortKey === 'mem') return sortDesc ? b.mem - a.mem : a.mem - b.mem;
+            if (sortKey === 'dr') {
+                const ad = a.dr >= 0 ? a.dr : -1e18, bd = b.dr >= 0 ? b.dr : -1e18;
+                return sortDesc ? bd - ad : ad - bd;
+            }
+            if (sortKey === 'dw') {
+                const ad = a.dw >= 0 ? a.dw : -1e18, bd = b.dw >= 0 ? b.dw : -1e18;
+                return sortDesc ? bd - ad : ad - bd;
+            }
+            if (sortKey === 'name') return sortDesc ? b.name.localeCompare(a.name) : a.name.localeCompare(b.name);
             return sortDesc ? b.pid - a.pid : a.pid - b.pid;
         });
 
@@ -1243,6 +1255,8 @@ table.process-table td.name-cell{font-weight:500;max-width:280px;overflow:hidden
             html += '<tr class="' + spikeClass + '">' +
                 '<td><div class="cpu-bar-wrap"><span class="cpu-val">' + p.cpu.toFixed(1) + '%</span><div class="cpu-bar-track"><div class="cpu-bar ' + barClass + '" style="width:' + barW + '%"></div></div></div></td>' +
                 '<td>' + p.mem.toFixed(1) + ' MB</td>' +
+                '<td class="disk-cell">' + diskLabel(p.dr) + '</td>' +
+                '<td class="disk-cell">' + diskLabel(p.dw) + '</td>' +
                 '<td class="pid-cell">' + p.pid + '</td>' +
                 '<td class="name-cell" title="' + escapeHtml(p.name) + '">' + escapeHtml(p.name) + '</td>' +
                 '<td>' + badge + '</td></tr>';
@@ -1266,7 +1280,7 @@ table.process-table td.name-cell{font-weight:500;max-width:280px;overflow:hidden
         th.addEventListener('click', function() {
             const key = this.dataset.sort;
             if (sortKey === key) { sortDesc = !sortDesc; }
-            else { sortKey = key; sortDesc = (key === 'cpu' || key === 'mem'); }
+            else { sortKey = key; sortDesc = (key === 'cpu' || key === 'mem' || key === 'dr' || key === 'dw'); }
             document.querySelectorAll('.process-table th').forEach(t => t.classList.remove('sorted'));
             this.classList.add('sorted');
             this.querySelector('.sort-arrow').innerHTML = sortDesc ? '&#9660;' : '&#9650;';
