@@ -10,7 +10,7 @@ constexpr const char* INDEX_HTML = R"rawliteral(<!DOCTYPE html>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SysTrace</title>
 <style>
-:root{--bg-primary:#0f0e17;--bg-secondary:#1a1a2e;--bg-card:#16213e;--bg-card-hover:#1c2847;--bg-surface:#0f3460;--border:#2a2a4a;--border-light:#3a3a5c;--text-primary:#e8e8e8;--text-secondary:#a0a0b8;--text-muted:#6c6c8a;--accent:#4ecdc4;--accent-glow:rgba(78,205,196,.25);--brand:#e94560;--brand-glow:rgba(233,69,96,.3);--cpu-blue:#4ecdc4;--mem-green:#ffe66d;--disk-orange:#ff9f43;--disk-purple:#a855f7;--spike-red:#e94560;--spike-orange:#ff9f43;--row-even:#141428;--row-odd:#191930}
+:root{--bg-primary:#0f0e17;--bg-secondary:#1a1a2e;--bg-card:#16213e;--bg-card-hover:#1c2847;--bg-surface:#0f3460;--border:#2a2a4a;--border-light:#3a3a5c;--text-primary:#e8e8e8;--text-secondary:#a0a0b8;--text-muted:#6c6c8a;--accent:#4ecdc4;--accent-glow:rgba(78,205,196,.25);--brand:#e94560;--brand-glow:rgba(233,69,96,.3);--cpu-blue:#4ecdc4;--mem-green:#ffe66d;--disk-orange:#ff9f43;--disk-purple:#a855f7;--net-up-cyan:#22d3ee;--net-down-blue:#60a5fa;--spike-red:#e94560;--spike-orange:#ff9f43;--row-even:#141428;--row-odd:#191930}
 *{margin:0;padding:0;box-sizing:border-box}
 body{background:var(--bg-primary);background-image:radial-gradient(ellipse at 50% 0%,#1a1a3e 0%,transparent 70%);color:var(--text-primary);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Helvetica Neue',Arial,sans-serif;font-size:14px;min-height:100vh;overflow-x:hidden}
 #app{max-width:1440px;margin:0 auto;padding:24px 28px 20px}
@@ -46,6 +46,10 @@ header h1 span{color:var(--brand);font-weight:800}
 .rt-card .rt-mini .rt-fill{height:100%;border-radius:2px;transition:width .5s ease}
 .rt-card.cpu-card .rt-fill{background:linear-gradient(90deg,#4ecdc4,#38b2ac)}
 .rt-card.mem-card .rt-fill{background:linear-gradient(90deg,#ffe66d,#fbbf24)}
+.rt-card.nu-card .rt-icon{background:rgba(34,211,238,.12);color:var(--net-up-cyan);box-shadow:inset 0 0 12px rgba(34,211,238,.08)}
+.rt-card.nd-card .rt-icon{background:rgba(96,165,250,.12);color:var(--net-down-blue);box-shadow:inset 0 0 12px rgba(96,165,250,.08)}
+.rt-card.nu-card .rt-fill{background:linear-gradient(90deg,#22d3ee,#06b6d4)}
+.rt-card.nd-card .rt-fill{background:linear-gradient(90deg,#60a5fa,#3b82f6)}
 
 /* ====== Metric Tabs ====== */
 .section{margin-bottom:20px}
@@ -165,6 +169,10 @@ canvas#heatmap:focus-visible{box-shadow:0 0 0 2px rgba(78,205,196,.3)}
 .stat-card.mem-card .sc-bar-fill{background:linear-gradient(90deg,#ffe66d,#fbbf24)}
 .stat-card.dr-card .sc-bar-fill{background:linear-gradient(90deg,#ff9f43,#fb923c)}
 .stat-card.dw-card .sc-bar-fill{background:linear-gradient(90deg,#a855f7,#9333ea)}
+.stat-card.nu-card .sc-icon{background:rgba(34,211,238,.12);color:var(--net-up-cyan)}
+.stat-card.nd-card .sc-icon{background:rgba(96,165,250,.12);color:var(--net-down-blue)}
+.stat-card.nu-card .sc-bar-fill{background:linear-gradient(90deg,#22d3ee,#06b6d4)}
+.stat-card.nd-card .sc-bar-fill{background:linear-gradient(90deg,#60a5fa,#3b82f6)}
 
 /* ====== Process Table ====== */
 .table-wrap{border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-top:4px}
@@ -257,6 +265,20 @@ table.process-table td.disk-cell{font-variant-numeric:tabular-nums;font-size:12p
         <div class="rt-mini"><div class="rt-fill" id="rt-mem-fill" style="width:0%"></div></div>
       </div>
     </div>
+    <div class="rt-card nu-card">
+      <div class="rt-icon">&#8593;</div>
+      <div class="rt-body">
+        <div class="rt-label">NET UP</div>
+        <div class="rt-value" id="rt-nu">--</div>
+      </div>
+    </div>
+    <div class="rt-card nd-card">
+      <div class="rt-icon">&#8595;</div>
+      <div class="rt-body">
+        <div class="rt-label">NET DOWN</div>
+        <div class="rt-value" id="rt-nd">--</div>
+      </div>
+    </div>
   </div>
 </header>
 
@@ -271,6 +293,8 @@ table.process-table td.disk-cell{font-variant-numeric:tabular-nums;font-size:12p
       <button class="metric-tab" data-metric="mem">Memory</button>
       <button class="metric-tab" data-metric="dr">Disk Read</button>
       <button class="metric-tab" data-metric="dw">Disk Write</button>
+      <button class="metric-tab" data-metric="nu">Net Up</button>
+      <button class="metric-tab" data-metric="nd">Net Down</button>
     </div>
   </div>
   <div class="heatmap-container">
@@ -358,6 +382,14 @@ table.process-table td.disk-cell{font-variant-numeric:tabular-nums;font-size:12p
             <div class="sc-icon">W</div>
             <div class="sc-body"><div class="sc-label">Disk Write</div><div class="sc-value" id="snap-dw"></div></div>
           </div>
+          <div class="stat-card nu-card">
+            <div class="sc-icon">&#8593;</div>
+            <div class="sc-body"><div class="sc-label">Net Up</div><div class="sc-value" id="snap-nu"></div></div>
+          </div>
+          <div class="stat-card nd-card">
+            <div class="sc-icon">&#8595;</div>
+            <div class="sc-body"><div class="sc-label">Net Down</div><div class="sc-value" id="snap-nd"></div></div>
+          </div>
         </div>
       </div>
       <div class="table-wrap">
@@ -367,8 +399,8 @@ table.process-table td.disk-cell{font-variant-numeric:tabular-nums;font-size:12p
               <tr>
                 <th data-sort="cpu">CPU% <span class="sort-arrow">&#9660;</span></th>
                 <th data-sort="mem">Memory <span class="sort-arrow">&#9650;</span></th>
-                <th data-sort="dr">Disk R <span class="sort-arrow">&#9650;</span></th>
-                <th data-sort="dw">Disk W <span class="sort-arrow">&#9650;</span></th>
+                <th data-sort="ior">IO Read <span class="sort-arrow">&#9650;</span></th>
+                <th data-sort="iow">IO Write <span class="sort-arrow">&#9650;</span></th>
                 <th data-sort="pid">PID <span class="sort-arrow">&#9650;</span></th>
                 <th data-sort="name">Name <span class="sort-arrow">&#9650;</span></th>
                 <th style="min-width:160px">Status</th>
@@ -387,7 +419,7 @@ table.process-table td.disk-cell{font-variant-numeric:tabular-nums;font-size:12p
   </div>
 </div>
 
-<div class="footer">SysTrace v1.1.0-dev &middot; Monitoring your system, effortlessly</div>
+<div class="footer">SysTrace v1.2.0-dev &middot; Monitoring your system, effortlessly</div>
 </div>
 
 <script>
@@ -436,12 +468,14 @@ table.process-table td.disk-cell{font-variant-numeric:tabular-nums;font-size:12p
         if (currentMetric === 'mem') return d.mem;
         if (currentMetric === 'dr') return d.dr;
         if (currentMetric === 'dw') return d.dw;
+        if (currentMetric === 'nu') return d.nu;
+        if (currentMetric === 'nd') return d.nd;
         return d.cpu;
     }
 
     function metricLabel(v) {
         if (v < 0) return 'N/A';
-        if (currentMetric === 'dr' || currentMetric === 'dw') return diskLabel(v);
+        if (currentMetric === 'dr' || currentMetric === 'dw' || currentMetric === 'nu' || currentMetric === 'nd') return diskLabel(v);
         return v.toFixed(1) + '%';
     }
 
@@ -778,6 +812,8 @@ table.process-table td.disk-cell{font-variant-numeric:tabular-nums;font-size:12p
         html += '<div class="tt-bar-wrap"><div class="tt-bar" style="width:' + memPct + '%;background:' + memColor + '"></div></div></div>';
         html += '<div class="tt-row"><span class="tt-label">Disk R</span><span class="tt-val">' + diskLabel(d.dr) + '</span></div>';
         html += '<div class="tt-row"><span class="tt-label">Disk W</span><span class="tt-val">' + diskLabel(d.dw) + '</span></div>';
+        html += '<div class="tt-row"><span class="tt-label">Net Up</span><span class="tt-val" style="color:#22d3ee">' + diskLabel(d.nu) + '</span></div>';
+        html += '<div class="tt-row"><span class="tt-label">Net Down</span><span class="tt-val" style="color:#60a5fa">' + diskLabel(d.nd) + '</span></div>';
 
         tooltip.innerHTML = html;
         tooltip.style.display = 'block';
@@ -1201,10 +1237,12 @@ table.process-table td.disk-cell{font-variant-numeric:tabular-nums;font-size:12p
 
         document.getElementById('snap-dr').textContent = data.system.disk_read_bps >= 0 ? formatBytes(data.system.disk_read_bps) + '/s' : 'N/A';
         document.getElementById('snap-dw').textContent = data.system.disk_write_bps >= 0 ? formatBytes(data.system.disk_write_bps) + '/s' : 'N/A';
+        document.getElementById('snap-nu').textContent = data.system.net_up_bps >= 0 ? formatBytes(data.system.net_up_bps) + '/s' : 'N/A';
+        document.getElementById('snap-nd').textContent = data.system.net_down_bps >= 0 ? formatBytes(data.system.net_down_bps) + '/s' : 'N/A';
 
         currentSnapshotData = data.processes;
         renderTable();
-        prevSnapshot = data.processes.map(p => ({pid: p.pid, name: p.name, cpu: p.cpu, mem: p.mem, dr: p.dr, dw: p.dw}));
+        prevSnapshot = data.processes.map(p => ({pid: p.pid, name: p.name, cpu: p.cpu, mem: p.mem, ior: p.ior, iow: p.iow}));
     }
 
     function formatBytes(b) {
@@ -1221,12 +1259,12 @@ table.process-table td.disk-cell{font-variant-numeric:tabular-nums;font-size:12p
         procs.sort((a, b) => {
             if (sortKey === 'cpu') return sortDesc ? b.cpu - a.cpu : a.cpu - b.cpu;
             if (sortKey === 'mem') return sortDesc ? b.mem - a.mem : a.mem - b.mem;
-            if (sortKey === 'dr') {
-                const ad = a.dr >= 0 ? a.dr : -1e18, bd = b.dr >= 0 ? b.dr : -1e18;
+            if (sortKey === 'ior') {
+                const ad = a.ior >= 0 ? a.ior : -1e18, bd = b.ior >= 0 ? b.ior : -1e18;
                 return sortDesc ? bd - ad : ad - bd;
             }
-            if (sortKey === 'dw') {
-                const ad = a.dw >= 0 ? a.dw : -1e18, bd = b.dw >= 0 ? b.dw : -1e18;
+            if (sortKey === 'iow') {
+                const ad = a.iow >= 0 ? a.iow : -1e18, bd = b.iow >= 0 ? b.iow : -1e18;
                 return sortDesc ? bd - ad : ad - bd;
             }
             if (sortKey === 'name') return sortDesc ? b.name.localeCompare(a.name) : a.name.localeCompare(b.name);
@@ -1255,8 +1293,8 @@ table.process-table td.disk-cell{font-variant-numeric:tabular-nums;font-size:12p
             html += '<tr class="' + spikeClass + '">' +
                 '<td><div class="cpu-bar-wrap"><span class="cpu-val">' + p.cpu.toFixed(1) + '%</span><div class="cpu-bar-track"><div class="cpu-bar ' + barClass + '" style="width:' + barW + '%"></div></div></div></td>' +
                 '<td>' + p.mem.toFixed(1) + ' MB</td>' +
-                '<td class="disk-cell">' + diskLabel(p.dr) + '</td>' +
-                '<td class="disk-cell">' + diskLabel(p.dw) + '</td>' +
+                '<td class="disk-cell">' + diskLabel(p.ior) + '</td>' +
+                '<td class="disk-cell">' + diskLabel(p.iow) + '</td>' +
                 '<td class="pid-cell">' + p.pid + '</td>' +
                 '<td class="name-cell" title="' + escapeHtml(p.name) + '">' + escapeHtml(p.name) + '</td>' +
                 '<td>' + badge + '</td></tr>';
@@ -1280,7 +1318,7 @@ table.process-table td.disk-cell{font-variant-numeric:tabular-nums;font-size:12p
         th.addEventListener('click', function() {
             const key = this.dataset.sort;
             if (sortKey === key) { sortDesc = !sortDesc; }
-            else { sortKey = key; sortDesc = (key === 'cpu' || key === 'mem' || key === 'dr' || key === 'dw'); }
+            else { sortKey = key; sortDesc = (key === 'cpu' || key === 'mem' || key === 'ior' || key === 'iow'); }
             document.querySelectorAll('.process-table th').forEach(t => t.classList.remove('sorted'));
             this.classList.add('sorted');
             this.querySelector('.sort-arrow').innerHTML = sortDesc ? '&#9660;' : '&#9650;';
@@ -1296,6 +1334,8 @@ table.process-table td.disk-cell{font-variant-numeric:tabular-nums;font-size:12p
                 const memEl = document.getElementById('rt-mem');
                 const cpuFill = document.getElementById('rt-cpu-fill');
                 const memFill = document.getElementById('rt-mem-fill');
+                const nuEl = document.getElementById('rt-nu');
+                const ndEl = document.getElementById('rt-nd');
 
                 if (last.cpu >= 0) {
                     cpuEl.textContent = last.cpu.toFixed(1) + '%';
@@ -1308,6 +1348,9 @@ table.process-table td.disk-cell{font-variant-numeric:tabular-nums;font-size:12p
                     memEl.className = 'rt-value' + (last.mem > 80 ? ' danger' : '');
                     memFill.style.width = Math.min(last.mem, 100) + '%';
                 } else { memEl.textContent = '--'; memFill.style.width = '0%'; }
+
+                nuEl.textContent = (last.nu >= 0) ? formatBytes(last.nu) + '/s' : '--';
+                ndEl.textContent = (last.nd >= 0) ? formatBytes(last.nd) + '/s' : '--';
             }
         } catch(e) {}
     }

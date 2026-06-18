@@ -128,21 +128,26 @@ void SysTraceServer::setup_routes() {
             std::vector<HeatmapEntry> sampled;
             size_t i = 0;
             while (i < data.size()) {
-                double sum_cpu = 0, sum_mem = 0, sum_dr = 0, sum_dw = 0;
+                double sum_cpu = 0, sum_mem = 0, sum_dr = 0, sum_dw = 0, sum_nu = 0, sum_nd = 0;
                 int count = 0;
+                int dr_cnt = 0, dw_cnt = 0, nu_cnt = 0, nd_cnt = 0;
                 for (size_t j = 0; j < static_cast<size_t>(step) && i + j < data.size(); ++j) {
                     sum_cpu += data[i + j].cpu_pct;
                     sum_mem += data[i + j].mem_pct;
-                    if (data[i + j].disk_read_bps >= 0) sum_dr += data[i + j].disk_read_bps;
-                    if (data[i + j].disk_write_bps >= 0) sum_dw += data[i + j].disk_write_bps;
+                    if (data[i + j].disk_read_bps >= 0) { sum_dr += data[i + j].disk_read_bps; dr_cnt++; }
+                    if (data[i + j].disk_write_bps >= 0) { sum_dw += data[i + j].disk_write_bps; dw_cnt++; }
+                    if (data[i + j].net_up_bps >= 0) { sum_nu += data[i + j].net_up_bps; nu_cnt++; }
+                    if (data[i + j].net_down_bps >= 0) { sum_nd += data[i + j].net_down_bps; nd_cnt++; }
                     count++;
                 }
                 HeatmapEntry entry;
                 entry.timestamp = data[i].timestamp;
                 entry.cpu_pct = sum_cpu / count;
                 entry.mem_pct = sum_mem / count;
-                entry.disk_read_bps = (sum_dr > 0) ? sum_dr / count : -1.0;
-                entry.disk_write_bps = (sum_dw > 0) ? sum_dw / count : -1.0;
+                entry.disk_read_bps  = (dr_cnt > 0) ? sum_dr / dr_cnt : -1.0;
+                entry.disk_write_bps = (dw_cnt > 0) ? sum_dw / dw_cnt : -1.0;
+                entry.net_up_bps   = (nu_cnt > 0) ? sum_nu / nu_cnt : -1.0;
+                entry.net_down_bps = (nd_cnt > 0) ? sum_nd / nd_cnt : -1.0;
                 sampled.push_back(entry);
                 i += step;
             }
@@ -187,6 +192,7 @@ void SysTraceServer::setup_routes() {
                     auto avg = buffer_->average_heatmap_range(oldest, newest);
                     res.set_content(json::serialize_aggregate_snapshot(
                         avg.cpu_pct, avg.mem_pct, avg.disk_read_bps, avg.disk_write_bps,
+                        avg.net_up_bps, avg.net_down_bps,
                         *earliest, t, oldest), "application/json");
                     return;
                 }
@@ -215,7 +221,7 @@ void SysTraceServer::setup_routes() {
 
         res.set_header("Content-Type", "application/json; charset=utf-8");
         res.set_content(json::serialize_status(
-            "1.1.0-dev",
+            "1.2.0-dev",
             uptime,
             buffer_->snapshot_size(),
             buffer_->heatmap_size(),

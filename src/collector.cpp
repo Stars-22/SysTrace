@@ -1,14 +1,20 @@
 // collector.cpp - System resource data collection implementation
 #include "collector.h"
+
+// Windows headers must be included in a specific order to avoid conflicts
+#include <winsock2.h>
+#include <ws2tcpip.h>
 #include <windows.h>
 #include <psapi.h>
 #include <tlhelp32.h>
+#include <iphlpapi.h>
 #include <chrono>
 #include <cmath>
 #include <set>
 
-// Link PDH library
+// Link libraries
 #pragma comment(lib, "pdh.lib")
+#pragma comment(lib, "iphlpapi.lib")
 
 Collector::Collector(RingBuffer& buffer, CollectorConfig config)
     : buffer_(buffer), config_(std::move(config)) {
@@ -157,6 +163,53 @@ std::string Collector::get_process_name(DWORD pid) {
     return (pos != std::string::npos) ? full_path.substr(pos + 1) : full_path;
 }
 
+// query_network() - Query system-wide network upload/download bytes per second using GetIfTable2
+// Sums octets across all operational non-loopback interfaces and computes delta between samples.
+bool Collector::query_network(double& up_bps, double& down_bps) {
+    up_bps = -1.0;
+    down_bps = -1.0;
+
+    PMIB_IF_TABLE2 if_table = nullptr;
+    DWORD err = GetIfTable2(&if_table);
+    if (err != NO_ERROR) {
+        return false;
+    }
+
+    uint64_t total_sent = 0;
+    uint64_t total_received = 0;
+
+    for (ULONG i = 0; i < if_table->NumEntries; ++i) {
+        auto& row = if_table->Table[i];
+        if (row.Type == IF_TYPE_SOFTWARE_LOOPBACK) {
+            continue;
+        }
+        if (row.OperStatus != IfOperStatusUp) {
+            continue;
+        }
+        total_sent += row.OutOctets;
+        total_received += row.InOctets;
+    }
+
+    FreeMibTable(if_table);
+
+    if (first_net_sample_) {
+        prev_net_.bytes_sent = total_sent;
+        prev_net_.bytes_received = total_received;
+        first_net_sample_ = false;
+        return false;
+    }
+
+    double interval_sec = config_.interval_ms / 1000.0;
+    uint64_t delta_sent = total_sent - prev_net_.bytes_sent;
+    uint64_t delta_received = total_received - prev_net_.bytes_received;
+    prev_net_.bytes_sent = total_sent;
+    prev_net_.bytes_received = total_received;
+
+    up_bps = static_cast<double>(delta_sent) / interval_sec;
+    down_bps = static_cast<double>(delta_received) / interval_sec;
+    return true;
+}
+
 // collect_once() - Collect one cycle of system/process metrics and push to ring buffer
 void Collector::collect_once() {
     try {
@@ -201,6 +254,10 @@ void Collector::collect_once() {
         // ===== Disk IO =====
         double disk_read_bps = -1.0, disk_write_bps = -1.0;
         query_disk_io(disk_read_bps, disk_write_bps);
+
+        // ===== Network =====
+        double net_up_bps = -1.0, net_down_bps = -1.0;
+        query_network(net_up_bps, net_down_bps);
 
         // ===== Process List =====
         std::vector<ProcessInfo> processes;
@@ -269,8 +326,8 @@ void Collector::collect_once() {
                                 double interval_sec = config_.interval_ms / 1000.0;
                                 uint64_t delta_read  = curr_read  - io_it->second.prev_read_bytes;
                                 uint64_t delta_write = curr_write - io_it->second.prev_write_bytes;
-                                info.disk_read_bps  = static_cast<double>(delta_read)  / interval_sec;
-                                info.disk_write_bps = static_cast<double>(delta_write) / interval_sec;
+                                info.io_read_bps  = static_cast<double>(delta_read)  / interval_sec;
+                                info.io_write_bps = static_cast<double>(delta_write) / interval_sec;
                                 io_it->second.prev_read_bytes  = curr_read;
                                 io_it->second.prev_write_bytes = curr_write;
                             } else if (io_it != proc_contexts_.end()) {
@@ -321,6 +378,8 @@ void Collector::collect_once() {
         snap.mem_pct        = memory_pct;
         snap.disk_read_bps  = disk_read_bps;
         snap.disk_write_bps = disk_write_bps;
+        snap.net_up_bps   = net_up_bps;
+        snap.net_down_bps = net_down_bps;
         snap.processes      = std::move(processes);
 
         buffer_.push(std::move(snap));

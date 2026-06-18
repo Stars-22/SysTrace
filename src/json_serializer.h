@@ -15,8 +15,9 @@ std::string serialize_heatmap(const std::vector<HeatmapEntry>& data,
 std::string serialize_snapshot(const SystemSnapshot& snap, time_t requested_time);
 
 std::string serialize_aggregate_snapshot(double cpu, double mem, double dr, double dw,
-                                          const SystemSnapshot& earliest_snap,
-                                          time_t requested_time, time_t actual_from);
+                                           double nu, double nd,
+                                           const SystemSnapshot& earliest_snap,
+                                           time_t requested_time, time_t actual_from);
 
 std::string serialize_status(const std::string& version,
                               long long uptime_seconds,

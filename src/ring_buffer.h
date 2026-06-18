@@ -19,8 +19,8 @@ struct ProcessInfo {
     std::string name;
     double      cpu_pct         = 0.0;
     double      mem_mb          = 0.0;
-    double      disk_read_bps   = -1.0;
-    double      disk_write_bps  = -1.0;
+    double      io_read_bps     = -1.0;
+    double      io_write_bps    = -1.0;
 };
 
 struct HeatmapEntry {
@@ -29,6 +29,8 @@ struct HeatmapEntry {
     double mem_pct      = 0.0;
     double disk_read_bps  = -1.0;
     double disk_write_bps = -1.0;
+    double net_up_bps   = -1.0;
+    double net_down_bps = -1.0;
 };
 
 struct SystemSnapshot {
@@ -37,6 +39,8 @@ struct SystemSnapshot {
     double mem_pct   = 0.0;
     double disk_read_bps  = -1.0;
     double disk_write_bps = -1.0;
+    double net_up_bps   = -1.0;
+    double net_down_bps = -1.0;
     std::vector<ProcessInfo> processes;
 };
 
@@ -56,6 +60,8 @@ public:
         entry.mem_pct       = snapshot.mem_pct;
         entry.disk_read_bps  = snapshot.disk_read_bps;
         entry.disk_write_bps = snapshot.disk_write_bps;
+        entry.net_up_bps   = snapshot.net_up_bps;
+        entry.net_down_bps = snapshot.net_down_bps;
 
         if (heatmap_data_.size() >= heatmap_capacity_) {
             heatmap_data_.pop_front();
@@ -143,14 +149,16 @@ public:
         double mem_pct      = 0.0;
         double disk_read_bps  = -1.0;
         double disk_write_bps = -1.0;
+        double net_up_bps   = -1.0;
+        double net_down_bps = -1.0;
         int    count        = 0;
     };
 
     HeatmapAverage average_heatmap_range(time_t from, time_t to) const {
         std::shared_lock lock(mutex_);
         HeatmapAverage avg;
-        double sum_cpu = 0, sum_mem = 0, sum_dr = 0, sum_dw = 0;
-        int dr_count = 0, dw_count = 0;
+        double sum_cpu = 0, sum_mem = 0, sum_dr = 0, sum_dw = 0, sum_nu = 0, sum_nd = 0;
+        int dr_count = 0, dw_count = 0, nu_count = 0, nd_count = 0;
         for (const auto& e : heatmap_data_) {
             if (e.timestamp < from) continue;
             if (e.timestamp > to) break;
@@ -158,6 +166,8 @@ public:
             sum_mem += e.mem_pct;
             if (e.disk_read_bps >= 0) { sum_dr += e.disk_read_bps; dr_count++; }
             if (e.disk_write_bps >= 0) { sum_dw += e.disk_write_bps; dw_count++; }
+            if (e.net_up_bps >= 0) { sum_nu += e.net_up_bps; nu_count++; }
+            if (e.net_down_bps >= 0) { sum_nd += e.net_down_bps; nd_count++; }
             avg.count++;
         }
         if (avg.count > 0) {
@@ -165,6 +175,8 @@ public:
             avg.mem_pct = sum_mem / avg.count;
             avg.disk_read_bps  = (dr_count > 0)  ? sum_dr / dr_count  : -1.0;
             avg.disk_write_bps = (dw_count > 0) ? sum_dw / dw_count : -1.0;
+            avg.net_up_bps   = (nu_count > 0)  ? sum_nu / nu_count  : -1.0;
+            avg.net_down_bps = (nd_count > 0) ? sum_nd / nd_count : -1.0;
         }
         return avg;
     }

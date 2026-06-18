@@ -49,19 +49,27 @@ private:
         bool has_io_baseline      = false;
     };
 
+    struct NetInterfaceSample {
+        uint64_t bytes_sent     = 0;
+        uint64_t bytes_received = 0;
+    };
+
     SystemCpuSample prev_sys_cpu_{};
     bool first_sample_ = true;
 
-    // PDH handles for disk IO counters
     PDH_HQUERY pdh_query_ = nullptr;
     PDH_HCOUNTER pdh_counter_read_ = nullptr;
     PDH_HCOUNTER pdh_counter_write_ = nullptr;
     bool first_disk_sample_ = true;
     bool disk_io_available_ = true;
 
+    NetInterfaceSample prev_net_{};
+    bool first_net_sample_ = true;
+
     std::unordered_map<DWORD, ProcessCpuContext> proc_contexts_;
     std::unordered_map<std::string, uint8_t> name_pool_;
 
     bool query_disk_io(double& read_bps, double& write_bps);
+    bool query_network(double& up_bps, double& down_bps);
     std::string get_process_name(DWORD pid);
 };

@@ -55,12 +55,14 @@ std::string serialize_heatmap(const std::vector<HeatmapEntry>& data,
         const auto& d = data[i];
         char entry[256];
         snprintf(entry, sizeof(entry),
-            R"({"t":%lld,"cpu":%s,"mem":%s,"dr":%s,"dw":%s})",
+            R"({"t":%lld,"cpu":%s,"mem":%s,"dr":%s,"dw":%s,"nu":%s,"nd":%s})",
             static_cast<long long>(d.timestamp),
             format_double(d.cpu_pct).c_str(),
             format_double(d.mem_pct).c_str(),
             format_double(d.disk_read_bps).c_str(),
-            format_double(d.disk_write_bps).c_str());
+            format_double(d.disk_write_bps).c_str(),
+            format_double(d.net_up_bps).c_str(),
+            format_double(d.net_down_bps).c_str());
 
         if (i > 0) json += ",";
         json += entry;
@@ -76,12 +78,14 @@ std::string serialize_snapshot(const SystemSnapshot& snap, time_t requested_time
 
     char header[512];
     snprintf(header, sizeof(header),
-        R"({"timestamp":%lld,"system":{"cpu":%s,"mem":%s,"disk_read_bps":%s,"disk_write_bps":%s},)",
+        R"({"timestamp":%lld,"system":{"cpu":%s,"mem":%s,"disk_read_bps":%s,"disk_write_bps":%s,"net_up_bps":%s,"net_down_bps":%s},)",
         static_cast<long long>(requested_time),
         format_double(snap.cpu_pct).c_str(),
         format_double(snap.mem_pct).c_str(),
         format_double(snap.disk_read_bps).c_str(),
-        format_double(snap.disk_write_bps).c_str());
+        format_double(snap.disk_write_bps).c_str(),
+        format_double(snap.net_up_bps).c_str(),
+        format_double(snap.net_down_bps).c_str());
 
     json += header;
 
@@ -96,13 +100,13 @@ std::string serialize_snapshot(const SystemSnapshot& snap, time_t requested_time
         const auto& p = snap.processes[i];
         char entry[640];
         snprintf(entry, sizeof(entry),
-            R"({"pid":%lu,"name":"%s","cpu":%s,"mem":%s,"dr":%s,"dw":%s})",
+            R"({"pid":%lu,"name":"%s","cpu":%s,"mem":%s,"ior":%s,"iow":%s})",
             static_cast<unsigned long>(p.pid),
             escape(p.name).c_str(),
             format_double(p.cpu_pct).c_str(),
             format_double(p.mem_mb).c_str(),
-            format_double(p.disk_read_bps).c_str(),
-            format_double(p.disk_write_bps).c_str());
+            format_double(p.io_read_bps).c_str(),
+            format_double(p.io_write_bps).c_str());
 
         if (i > 0) json += ",";
         json += entry;
@@ -113,19 +117,22 @@ std::string serialize_snapshot(const SystemSnapshot& snap, time_t requested_time
 }
 
 std::string serialize_aggregate_snapshot(double cpu, double mem, double dr, double dw,
-                                          const SystemSnapshot& earliest_snap,
-                                          time_t requested_time, time_t actual_from) {
+                                           double nu, double nd,
+                                           const SystemSnapshot& earliest_snap,
+                                           time_t requested_time, time_t actual_from) {
     std::string json;
     json.reserve(4096);
 
     char header[512];
     snprintf(header, sizeof(header),
-        R"({"timestamp":%lld,"system":{"cpu":%s,"mem":%s,"disk_read_bps":%s,"disk_write_bps":%s},)",
+        R"({"timestamp":%lld,"system":{"cpu":%s,"mem":%s,"disk_read_bps":%s,"disk_write_bps":%s,"net_up_bps":%s,"net_down_bps":%s},)",
         static_cast<long long>(requested_time),
         format_double(cpu).c_str(),
         format_double(mem).c_str(),
         format_double(dr).c_str(),
-        format_double(dw).c_str());
+        format_double(dw).c_str(),
+        format_double(nu).c_str(),
+        format_double(nd).c_str());
 
     json += header;
 
@@ -140,13 +147,13 @@ std::string serialize_aggregate_snapshot(double cpu, double mem, double dr, doub
         const auto& p = earliest_snap.processes[i];
         char entry[640];
         snprintf(entry, sizeof(entry),
-            R"({"pid":%lu,"name":"%s","cpu":%s,"mem":%s,"dr":%s,"dw":%s})",
+            R"({"pid":%lu,"name":"%s","cpu":%s,"mem":%s,"ior":%s,"iow":%s})",
             static_cast<unsigned long>(p.pid),
             escape(p.name).c_str(),
             format_double(p.cpu_pct).c_str(),
             format_double(p.mem_mb).c_str(),
-            format_double(p.disk_read_bps).c_str(),
-            format_double(p.disk_write_bps).c_str());
+            format_double(p.io_read_bps).c_str(),
+            format_double(p.io_write_bps).c_str());
 
         if (i > 0) json += ",";
         json += entry;

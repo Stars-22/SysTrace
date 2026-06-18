@@ -30,6 +30,7 @@ if(WIN32)
         kernel32
         ws2_32
         pdh
+        iphlpapi
     )
 endif()
 
