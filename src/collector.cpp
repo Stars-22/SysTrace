@@ -216,9 +216,11 @@ void Collector::collect_once() {
     try {
         time_t timestamp = std::time(nullptr);
 
+        bool was_first = first_sample_;
+
         // ===== System CPU =====
         FILETIME idle_ft, kernel_ft, user_ft;
-        double system_cpu = 0.0;
+        double system_cpu = -1.0;
         uint64_t sys_delta_total = 0;
 
         if (GetSystemTimes(&idle_ft, &kernel_ft, &user_ft)) {
@@ -245,11 +247,13 @@ void Collector::collect_once() {
         }
 
         // ===== System Memory =====
-        double memory_pct = 0.0;
-        MEMORYSTATUSEX mem_info;
-        mem_info.dwLength = sizeof(mem_info);
-        if (GlobalMemoryStatusEx(&mem_info)) {
-            memory_pct = static_cast<double>(mem_info.dwMemoryLoad);
+        double memory_pct = -1.0;
+        if (!was_first) {
+            MEMORYSTATUSEX mem_info;
+            mem_info.dwLength = sizeof(mem_info);
+            if (GlobalMemoryStatusEx(&mem_info)) {
+                memory_pct = static_cast<double>(mem_info.dwMemoryLoad);
+            }
         }
 
         // ===== Disk IO =====
@@ -350,7 +354,9 @@ void Collector::collect_once() {
                         info.name = pe32.szExeFile;
                     }
 
-                    processes.push_back(std::move(info));
+                    if (!was_first) {
+                        processes.push_back(std::move(info));
+                    }
                 } while (Process32Next(snapshot, &pe32));
             }
             CloseHandle(snapshot);
