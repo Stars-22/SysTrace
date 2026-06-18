@@ -277,15 +277,7 @@ bool Persistence::recover(RingBuffer& buf) {
             int recovered = 0;
             HeatmapEntry e;
             while (read_heatmap_record(heat_file_, e)) {
-                SystemSnapshot snap;
-                snap.timestamp      = e.timestamp;
-                snap.cpu_pct        = e.cpu_pct;
-                snap.mem_pct        = e.mem_pct;
-                snap.disk_read_bps  = e.disk_read_bps;
-                snap.disk_write_bps = e.disk_write_bps;
-                snap.net_up_bps     = e.net_up_bps;
-                snap.net_down_bps   = e.net_down_bps;
-                buf.push(std::move(snap));
+                buf.push_heatmap_only(e);
                 recovered++;
             }
             fprintf(stderr, "[SysTrace] Recovered %d heatmap records\n", recovered);
