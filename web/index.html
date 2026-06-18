@@ -23,8 +23,8 @@ header::after{content:'';position:absolute;inset:0;background:radial-gradient(el
 @keyframes pulseRing{0%{transform:scale(.7);opacity:.8}100%{transform:scale(1.8);opacity:0}}
 header h1{font-size:22px;font-weight:700;color:var(--text-primary);letter-spacing:-0.5px;text-shadow:0 0 20px rgba(232,232,232,.05)}
 header h1 span{color:var(--brand);font-weight:800}
-.realtime-cards{display:flex;gap:12px;z-index:1}
-.rt-card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:10px 18px;display:flex;align-items:center;gap:14px;min-width:148px;transition:all .25s ease;position:relative;overflow:hidden}
+.realtime-cards{display:flex;gap:10px;z-index:1;flex:1;margin-left:24px}
+.rt-card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:10px 14px;display:flex;align-items:center;gap:12px;flex:1;min-width:0;transition:all .25s ease;position:relative;overflow:hidden}
 .rt-card::after{content:'';position:absolute;top:0;left:0;bottom:0;width:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.02));transition:width .3s ease}
 .rt-card:hover{border-color:var(--border-light);box-shadow:0 4px 20px rgba(0,0,0,.3),0 0 0 1px var(--border-light)}
 .rt-card:hover::after{width:100%}
@@ -32,9 +32,9 @@ header h1 span{color:var(--brand);font-weight:800}
 .rt-card .rt-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0;position:relative}
 .rt-card.cpu-card .rt-icon{background:rgba(78,205,196,.12);color:var(--cpu-blue);box-shadow:inset 0 0 12px rgba(78,205,196,.08)}
 .rt-card.mem-card .rt-icon{background:rgba(255,230,109,.12);color:var(--mem-green);box-shadow:inset 0 0 12px rgba(255,230,109,.08)}
-.rt-card .rt-body{display:flex;flex-direction:column;min-width:60px}
-.rt-card .rt-label{font-size:10px;text-transform:uppercase;letter-spacing:1.2px;color:var(--text-muted);line-height:1}
-.rt-card .rt-value{font-size:24px;font-weight:700;line-height:1.15;font-variant-numeric:tabular-nums;color:var(--text-primary);transition:color .3s,text-shadow .3s}
+.rt-card .rt-body{display:flex;flex-direction:column;min-width:0}
+.rt-card .rt-label{font-size:9px;text-transform:uppercase;letter-spacing:1.2px;color:var(--text-muted);line-height:1;white-space:nowrap}
+.rt-card .rt-value{font-size:20px;font-weight:700;line-height:1.15;font-variant-numeric:tabular-nums;color:var(--text-primary);transition:color .3s,text-shadow .3s}
 .rt-card .rt-value.warn{color:#ff9f43;text-shadow:0 0 12px rgba(255,159,67,.3)}
 .rt-card .rt-value.danger{color:#f87171;text-shadow:0 0 12px rgba(248,113,113,.3)}
 .rt-card .rt-mini{height:3px;border-radius:2px;margin-top:4px;background:var(--border);overflow:hidden}
@@ -43,8 +43,12 @@ header h1 span{color:var(--brand);font-weight:800}
 .rt-card.mem-card .rt-fill{background:linear-gradient(90deg,#ffe66d,#fbbf24)}
 .rt-card.nu-card .rt-icon{background:rgba(34,211,238,.12);color:var(--net-up-cyan);box-shadow:inset 0 0 12px rgba(34,211,238,.08)}
 .rt-card.nd-card .rt-icon{background:rgba(96,165,250,.12);color:var(--net-down-blue);box-shadow:inset 0 0 12px rgba(96,165,250,.08)}
+.rt-card.dr-card .rt-icon{background:rgba(255,159,67,.12);color:var(--disk-orange);box-shadow:inset 0 0 12px rgba(255,159,67,.08)}
+.rt-card.dw-card .rt-icon{background:rgba(168,85,247,.12);color:var(--disk-purple);box-shadow:inset 0 0 12px rgba(168,85,247,.08)}
 .rt-card.nu-card .rt-fill{background:linear-gradient(90deg,#22d3ee,#06b6d4)}
 .rt-card.nd-card .rt-fill{background:linear-gradient(90deg,#60a5fa,#3b82f6)}
+.rt-card.dr-card .rt-fill{background:linear-gradient(90deg,#ff9f43,#fb923c)}
+.rt-card.dw-card .rt-fill{background:linear-gradient(90deg,#a855f7,#9333ea)}
 
 /* ====== Metric Tabs ====== */
 .section{margin-bottom:20px}
@@ -232,9 +236,10 @@ table.process-table td.disk-cell{font-variant-numeric:tabular-nums;font-size:12p
 @media(max-width:768px){
     #app{padding:12px 14px 24px}
     header{flex-direction:column;gap:12px;padding:14px 16px}
-    .realtime-cards{width:100%}
-    .rt-card{min-width:0;flex:1;padding:8px 12px}
-    .rt-card .rt-value{font-size:20px}
+    .realtime-cards{width:100%;margin-left:0;flex-wrap:wrap}
+    .rt-card{flex:0 0 calc(33.33% - 7px);padding:8px 10px}
+    .rt-card .rt-value{font-size:16px}
+    .rt-card .rt-icon{width:32px;height:32px;font-size:10px}
     .sys-stats{grid-template-columns:1fr 1fr}
     .section-header{flex-direction:column;gap:8px;align-items:flex-start}
     .time-controls{flex-direction:column;align-items:flex-start}
@@ -264,6 +269,20 @@ table.process-table td.disk-cell{font-variant-numeric:tabular-nums;font-size:12p
         <div class="rt-label">MEM</div>
         <div class="rt-value" id="rt-mem">--</div>
         <div class="rt-mini"><div class="rt-fill" id="rt-mem-fill" style="width:0%"></div></div>
+      </div>
+    </div>
+    <div class="rt-card dr-card">
+      <div class="rt-icon">R</div>
+      <div class="rt-body">
+        <div class="rt-label">DISK R</div>
+        <div class="rt-value" id="rt-dr">--</div>
+      </div>
+    </div>
+    <div class="rt-card dw-card">
+      <div class="rt-icon">W</div>
+      <div class="rt-body">
+        <div class="rt-label">DISK W</div>
+        <div class="rt-value" id="rt-dw">--</div>
       </div>
     </div>
     <div class="rt-card nu-card">
@@ -1335,6 +1354,8 @@ table.process-table td.disk-cell{font-variant-numeric:tabular-nums;font-size:12p
                 const memEl = document.getElementById('rt-mem');
                 const cpuFill = document.getElementById('rt-cpu-fill');
                 const memFill = document.getElementById('rt-mem-fill');
+                const drEl = document.getElementById('rt-dr');
+                const dwEl = document.getElementById('rt-dw');
                 const nuEl = document.getElementById('rt-nu');
                 const ndEl = document.getElementById('rt-nd');
 
@@ -1350,6 +1371,8 @@ table.process-table td.disk-cell{font-variant-numeric:tabular-nums;font-size:12p
                     memFill.style.width = Math.min(last.mem, 100) + '%';
                 } else { memEl.textContent = '--'; memFill.style.width = '0%'; }
 
+                drEl.textContent = (last.dr >= 0) ? formatBytes(last.dr) + '/s' : '--';
+                dwEl.textContent = (last.dw >= 0) ? formatBytes(last.dw) + '/s' : '--';
                 nuEl.textContent = (last.nu >= 0) ? formatBytes(last.nu) + '/s' : '--';
                 ndEl.textContent = (last.nd >= 0) ? formatBytes(last.nd) + '/s' : '--';
             }
