@@ -147,26 +147,25 @@ void SysTraceServer::setup_routes() {
             std::vector<HeatmapEntry> sampled;
             size_t i = 0;
             while (i < data.size()) {
-                double sum_cpu = 0, sum_mem = 0, sum_dr = 0, sum_dw = 0, sum_nu = 0, sum_nd = 0;
-                int count = 0;
-                int dr_cnt = 0, dw_cnt = 0, nu_cnt = 0, nd_cnt = 0;
+                double max_cpu = -1.0, max_mem = -1.0;
+                double max_dr = -1.0, max_dw = -1.0, max_nu = -1.0, max_nd = -1.0;
                 for (size_t j = 0; j < static_cast<size_t>(step) && i + j < data.size(); ++j) {
-                    sum_cpu += data[i + j].cpu_pct;
-                    sum_mem += data[i + j].mem_pct;
-                    if (data[i + j].disk_read_bps >= 0) { sum_dr += data[i + j].disk_read_bps; dr_cnt++; }
-                    if (data[i + j].disk_write_bps >= 0) { sum_dw += data[i + j].disk_write_bps; dw_cnt++; }
-                    if (data[i + j].net_up_bps >= 0) { sum_nu += data[i + j].net_up_bps; nu_cnt++; }
-                    if (data[i + j].net_down_bps >= 0) { sum_nd += data[i + j].net_down_bps; nd_cnt++; }
-                    count++;
+                    const auto& d = data[i + j];
+                    if (d.cpu_pct > max_cpu) max_cpu = d.cpu_pct;
+                    if (d.mem_pct > max_mem) max_mem = d.mem_pct;
+                    if (d.disk_read_bps > max_dr) max_dr = d.disk_read_bps;
+                    if (d.disk_write_bps > max_dw) max_dw = d.disk_write_bps;
+                    if (d.net_up_bps > max_nu) max_nu = d.net_up_bps;
+                    if (d.net_down_bps > max_nd) max_nd = d.net_down_bps;
                 }
                 HeatmapEntry entry;
                 entry.timestamp = data[i].timestamp;
-                entry.cpu_pct = sum_cpu / count;
-                entry.mem_pct = sum_mem / count;
-                entry.disk_read_bps  = (dr_cnt > 0) ? sum_dr / dr_cnt : -1.0;
-                entry.disk_write_bps = (dw_cnt > 0) ? sum_dw / dw_cnt : -1.0;
-                entry.net_up_bps   = (nu_cnt > 0) ? sum_nu / nu_cnt : -1.0;
-                entry.net_down_bps = (nd_cnt > 0) ? sum_nd / nd_cnt : -1.0;
+                entry.cpu_pct = (max_cpu >= 0) ? max_cpu : -1.0;
+                entry.mem_pct = (max_mem >= 0) ? max_mem : -1.0;
+                entry.disk_read_bps  = (max_dr >= 0) ? max_dr : -1.0;
+                entry.disk_write_bps = (max_dw >= 0) ? max_dw : -1.0;
+                entry.net_up_bps   = (max_nu >= 0) ? max_nu : -1.0;
+                entry.net_down_bps = (max_nd >= 0) ? max_nd : -1.0;
                 sampled.push_back(entry);
                 i += step;
             }
@@ -225,7 +224,7 @@ void SysTraceServer::setup_routes() {
             } else {
                 res.status = 404;
                 res.set_content(json::serialize_error("no_nearby_snapshot",
-                    "No snapshot found within 30 seconds of the requested time"), "application/json");
+                    "No snapshot found within 120 seconds of the requested time"), "application/json");
             }
             return;
         }

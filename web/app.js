@@ -76,9 +76,9 @@
         return 'extreme';
     }
 
-    function calculateStep() {
+    function calculateStep(count) {
         const w = Math.max(canvas.clientWidth - 60, 100);
-        let step = Math.ceil(86400 / w);
+        let step = Math.ceil((count || 86400) / w);
         step = Math.ceil(step / 5) * 5;
         return Math.max(step, 1);
     }
@@ -679,7 +679,15 @@
 
     async function loadHeatmap() {
         try {
-            const step = calculateStep();
+            let count = 86400;
+            try {
+                const sr = await fetch(API_BASE + '/api/status');
+                if (sr.ok) {
+                    const sj = await sr.json();
+                    count = sj.heatmap_count || 86400;
+                }
+            } catch(e2) {}
+            const step = calculateStep(count);
             const resp = await fetch(API_BASE + '/api/heatmap?step=' + step);
             if (!resp.ok) return;
             const json = await resp.json();

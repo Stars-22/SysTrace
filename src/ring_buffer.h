@@ -98,7 +98,7 @@ public:
         return std::vector<HeatmapEntry>(heatmap_data_.begin(), heatmap_data_.end());
     }
 
-    const SystemSnapshot* find_nearest_snapshot(time_t t, int max_delta_seconds = 30) const {
+    const SystemSnapshot* find_nearest_snapshot(time_t t, int max_delta_seconds = 120) const {
         std::shared_lock lock(mutex_);
         if (snapshot_data_.empty()) return nullptr;
 
