@@ -435,7 +435,7 @@ table.process-table td.disk-cell{font-variant-numeric:tabular-nums;font-size:12p
   </div>
 </div>
 
-<div class="footer">SysTrace v1.1.0-dev &middot; Monitoring your system, effortlessly</div>
+<div class="footer">SysTrace v1.1.0 &middot; Monitoring your system, effortlessly</div>
 </div>
 
 <script>

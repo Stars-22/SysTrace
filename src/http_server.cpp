@@ -247,7 +247,7 @@ void SysTraceServer::setup_routes() {
 
         res.set_header("Content-Type", "application/json; charset=utf-8");
         res.set_content(json::serialize_status(
-            "1.1.0-dev",
+            "1.1.0",
             uptime,
             buffer_->snapshot_size(),
             buffer_->heatmap_size(),
