@@ -3,6 +3,7 @@
 #include "persistence.h"
 #include "json_serializer.h"
 #include "embed_index.h"
+#include "embed_logo.h"
 #include <cstdio>
 #include <cstdlib>
 
@@ -87,6 +88,13 @@ void SysTraceServer::setup_routes() {
     // GET / - serve index.html
     server_->Get("/", [](const httplib::Request&, httplib::Response& res) {
         res.set_content(INDEX_HTML, "text/html; charset=utf-8");
+    });
+
+    // GET /logo.svg - serve the embedded SVG logo
+    server_->Get("/logo.svg", [](const httplib::Request&, httplib::Response& res) {
+        res.set_header("Content-Type", "image/svg+xml; charset=utf-8");
+        res.set_header("Cache-Control", "public, max-age=3600");
+        res.set_content(LOGO_SVG, "image/svg+xml; charset=utf-8");
     });
 
     // GET /api/heatmap

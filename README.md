@@ -1,5 +1,7 @@
 # SysTrace
 
+<p align="center"><img src="logo.svg" width="128" height="128" alt="SysTrace Logo"></p>
+
 **轻量级 Windows 系统资源历史回溯器 | Lightweight Windows System Resource History Retrospector**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
@@ -34,6 +36,7 @@ SysTrace is a lightweight tool that silently records system resource usage (CPU,
 - **Per-process IO** — Per-process IO Read/Write rates (total IO including disk + network + other)
 - **6-metric heatmap** — CPU, Memory, Disk Read, Disk Write, Net Up, Net Down
 - **Disk persistence** — Binary append-log storage, auto-recovers on restart (24h heatmap + 2h snapshots)
+- **System tray** — Runs hidden in background with tray icon, right-click to open dashboard or exit
 - **Graceful shutdown** — Ctrl+C cleanly stops the server
 - **Single file exe** — No dependencies, no installer, just run it
 
@@ -95,6 +98,7 @@ Then open **http://localhost:26616** in your browser.
 | `--no-persist` | (off) | Disable disk persistence (memory-only mode) |
 | `--data-dir` | exe dir | Directory for data files |
 | `--flush-interval` | 10000 | Disk flush interval in milliseconds |
+| `--foreground` | (off) | Show console window instead of hiding to system tray |
 
 ### API Endpoints
 
@@ -180,6 +184,7 @@ SysTrace 是一个极轻量级的 Windows 系统资源监控工具。它以单�
 - **进程 IO 速率** — 每进程 IO Read/Write 速率（包含磁盘+网络+其他所有 IO 的总量）
 - **6 指标热力图** — CPU、内存、磁盘读、磁盘写、上行网速、下行网速
 - **磁盘持久化** — 二进制追加日志存储，重启自动恢复（24h 热力图 + 2h 进程快照）
+- **系统托盘** — 后台静默运行于系统托盘，右键打开面板或退出
 - **优雅退出** — Ctrl+C 干净关闭服务器
 - **单文件部署** — 无依赖，无安装，双击即运行
 
@@ -241,6 +246,7 @@ SysTrace.exe --help
 | `--no-persist` | (关闭) | 禁用磁盘持久化（纯内存模式） |
 | `--data-dir` | exe 同目录 | 数据文件存储目录 |
 | `--flush-interval` | 10000 | 磁盘 flush 间隔毫秒数 |
+| `--foreground` | (关闭) | 显示控制台窗口，不隐藏到系统托盘 |
 
 ### API 接口
 

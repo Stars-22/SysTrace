@@ -9,7 +9,7 @@ constexpr const char* INDEX_HTML = R"rawliteral(<!DOCTYPE html>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SysTrace</title>
-<title>SysTrace</title>
+<link rel="icon" type="image/svg+xml" href="/logo.svg">
 <style>
 :root{--bg-primary:#0f0e17;--bg-secondary:#1a1a2e;--bg-card:#16213e;--bg-card-hover:#1c2847;--bg-surface:#0f3460;--border:#2a2a4a;--border-light:#3a3a5c;--text-primary:#e8e8e8;--text-secondary:#a0a0b8;--text-muted:#6c6c8a;--accent:#4ecdc4;--accent-glow:rgba(78,205,196,.25);--brand:#e94560;--brand-glow:rgba(233,69,96,.3);--cpu-blue:#4ecdc4;--mem-green:#ffe66d;--disk-orange:#ff9f43;--disk-purple:#a855f7;--net-up-cyan:#22d3ee;--net-down-blue:#60a5fa;--spike-red:#e94560;--spike-orange:#ff9f43;--row-even:#141428;--row-odd:#191930}
 *{margin:0;padding:0;box-sizing:border-box}
@@ -22,11 +22,7 @@ header::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;back
 header::after{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 20% 50%,rgba(78,205,196,.03) 0%,transparent 60%);pointer-events:none}
 @keyframes gradientShift{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
 .logo{display:flex;align-items:center;gap:12px;z-index:1}
-.logo-icon{width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,var(--bg-surface) 0%,#1a3a70 100%);display:flex;align-items:center;justify-content:center;position:relative;box-shadow:0 0 16px var(--accent-glow),0 0 4px rgba(78,205,196,.15)}
-.logo-icon .pulse{width:10px;height:10px;border-radius:50%;background:var(--accent);animation:pulse 2s ease-in-out infinite;position:relative;box-shadow:0 0 8px var(--accent)}
-.logo-icon .pulse::after{content:'';position:absolute;inset:-4px;border-radius:50%;border:2px solid var(--accent);opacity:0;animation:pulseRing 2s ease-in-out infinite}
-@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.6;transform:scale(.8)}}
-@keyframes pulseRing{0%{transform:scale(.7);opacity:.8}100%{transform:scale(1.8);opacity:0}}
+.logo-icon{width:38px;height:38px;border-radius:10px;object-fit:contain;box-shadow:0 0 16px var(--accent-glow),0 0 4px rgba(78,205,196,.15)}
 header h1{font-size:22px;font-weight:700;color:var(--text-primary);letter-spacing:-0.5px;text-shadow:0 0 20px rgba(232,232,232,.05)}
 header h1 span{color:var(--brand);font-weight:800}
 .realtime-cards{display:flex;gap:10px;z-index:1;flex:1;margin-left:40px}
@@ -253,7 +249,7 @@ table.process-table td.disk-cell{font-variant-numeric:tabular-nums;font-size:12p
 <div id="app">
 <header>
   <div class="logo">
-    <div class="logo-icon"><div class="pulse"></div></div>
+    <img class="logo-icon" src="/logo.svg" alt="SysTrace">
     <h1>Sys<span>Trace</span></h1>
   </div>
   <div class="realtime-cards" id="realtime">

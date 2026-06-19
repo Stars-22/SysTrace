@@ -16,7 +16,12 @@ set(SOURCES
     src/http_server.cpp
     src/json_serializer.cpp
     src/persistence.cpp
+    src/tray_icon.cpp
 )
+
+if(WIN32)
+    set(SOURCES ${SOURCES} src/systrace.rc)
+endif()
 
 include_directories(
     ${CMAKE_SOURCE_DIR}/src
@@ -32,6 +37,7 @@ if(WIN32)
         ws2_32
         pdh
         iphlpapi
+        shell32
     )
 endif()
 

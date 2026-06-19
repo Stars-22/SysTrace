@@ -1,19 +1,94 @@
 // main.cpp - Entry point: parse CLI args, configure and start SysTraceServer
 #include "http_server.h"
+#include "tray_icon.h"
 #include <cstdio>
 #include <cstdlib>
 #include <string>
-#include <windows.h>
+#include <thread>
+#include <shellapi.h>
 
 static SysTraceServer* g_server = nullptr;
+static TrayIcon* g_tray = nullptr;
+static HWND g_hwnd = nullptr;
+static bool g_should_exit = false;
+static int g_actual_port = 26616;
 
 static BOOL WINAPI console_ctrl_handler(DWORD ctrl_type) {
     if (ctrl_type == CTRL_C_EVENT || ctrl_type == CTRL_BREAK_EVENT || ctrl_type == CTRL_CLOSE_EVENT) {
         fprintf(stderr, "\n[SysTrace] Shutting down...\n");
+        g_should_exit = true;
         if (g_server) g_server->stop();
+        if (g_hwnd) PostMessage(g_hwnd, WM_QUIT, 0, 0);
         return TRUE;
     }
     return FALSE;
+}
+
+static std::string exe_dir_path() {
+    char buf[MAX_PATH];
+    DWORD len = GetModuleFileNameA(nullptr, buf, MAX_PATH);
+    if (len == 0) return ".";
+    std::string full(buf, len);
+    size_t pos = full.find_last_of("\\/");
+    return (pos != std::string::npos) ? full.substr(0, pos + 1) : ".\\";
+}
+
+static HICON load_icon_from_dir() {
+    std::string icon_path = exe_dir_path() + "logo.ico";
+    return (HICON)LoadImageA(nullptr, icon_path.c_str(), IMAGE_ICON,
+                              0, 0, LR_LOADFROMFILE | LR_DEFAULTSIZE);
+}
+
+static HICON load_icon_from_exe() {
+    char exe_path[MAX_PATH];
+    GetModuleFileNameA(nullptr, exe_path, MAX_PATH);
+    HICON hIcon = ExtractIconA(nullptr, exe_path, 0);
+    if ((uintptr_t)hIcon <= 1) return nullptr;
+    return hIcon;
+}
+
+static LRESULT CALLBACK wnd_proc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
+    if (msg == WM_TRAYICON) {
+        if (lp == WM_RBUTTONUP) {
+            if (g_tray) g_tray->show_menu(hwnd);
+            return 0;
+        }
+        if (lp == WM_LBUTTONUP || lp == WM_LBUTTONDBLCLK) {
+            char url[64];
+            snprintf(url, sizeof(url), "http://localhost:%d", g_actual_port);
+            ShellExecuteA(nullptr, "open", url, nullptr, nullptr, SW_SHOWNORMAL);
+            return 0;
+        }
+    }
+    if (msg == WM_COMMAND) {
+        if (LOWORD(wp) == IDM_OPEN_DASHBOARD) {
+            char url[64];
+            snprintf(url, sizeof(url), "http://localhost:%d", g_actual_port);
+            ShellExecuteA(nullptr, "open", url, nullptr, nullptr, SW_SHOWNORMAL);
+            return 0;
+        }
+        if (LOWORD(wp) == IDM_EXIT) {
+            g_should_exit = true;
+            if (g_server) g_server->stop();
+            PostMessage(hwnd, WM_QUIT, 0, 0);
+            return 0;
+        }
+    }
+    return DefWindowProcA(hwnd, msg, wp, lp);
+}
+
+static HWND create_hidden_window() {
+    WNDCLASSEXA wc = {};
+    wc.cbSize = sizeof(WNDCLASSEXA);
+    wc.lpfnWndProc = wnd_proc;
+    wc.hInstance = GetModuleHandleA(nullptr);
+    wc.lpszClassName = "SysTrayHiddenWnd";
+    RegisterClassExA(&wc);
+
+    HWND hwnd = CreateWindowExA(0, "SysTrayHiddenWnd", "SysTrace",
+                                 0, 0, 0, 0, 0, nullptr, nullptr,
+                                 GetModuleHandleA(nullptr), nullptr);
+    return hwnd;
 }
 
 struct Config {
@@ -26,6 +101,7 @@ struct Config {
     bool persist = true;
     std::string data_dir;
     int flush_interval_ms = 10000;
+    bool foreground = false;
 };
 
 static void print_help() {
@@ -41,6 +117,7 @@ static void print_help() {
     printf("  --no-persist              Disable disk persistence (memory-only mode)\n");
     printf("  --data-dir <path>         Data file directory (default: exe directory)\n");
     printf("  --flush-interval <int>    Disk flush interval in ms (default: 10000)\n");
+    printf("  --foreground              Show console window (default: hidden to tray)\n");
     printf("  --help                    Show this help\n");
     printf("  --version                 Show version\n\n");
     printf("Open http://localhost:<port> in your browser to view the heatmap.\n");
@@ -69,6 +146,8 @@ static Config parse_args(int argc, char* argv[]) {
             cfg.data_dir = argv[++i];
         } else if (arg == "--flush-interval" && i + 1 < argc) {
             cfg.flush_interval_ms = std::stoi(argv[++i]);
+        } else if (arg == "--foreground") {
+            cfg.foreground = true;
         } else if (arg == "--help") {
             print_help();
             exit(0);
@@ -111,13 +190,63 @@ int main(int argc, char* argv[]) {
     g_server = &server;
     SetConsoleCtrlHandler(console_ctrl_handler, TRUE);
 
-    fprintf(stderr, "[SysTrace] Starting... Port=%d Interval=%dms\n", cfg.port, cfg.interval_ms);
-
-    if (!server.start()) {
-        fprintf(stderr, "[SysTrace] Failed to start server\n");
-        g_server = nullptr;
-        return 1;
+    if (cfg.foreground) {
+        fprintf(stderr, "[SysTrace] Starting in foreground mode... Port=%d Interval=%dms\n", cfg.port, cfg.interval_ms);
+    } else {
+        HWND hConsole = GetConsoleWindow();
+        if (hConsole) ShowWindow(hConsole, SW_HIDE);
+        fprintf(stderr, "[SysTrace] Starting in background mode... Port=%d\n", cfg.port);
     }
+
+    std::thread server_thread([&]() {
+        if (!server.start()) {
+            fprintf(stderr, "[SysTrace] Failed to start server\n");
+            g_should_exit = true;
+            if (g_hwnd) PostMessage(g_hwnd, WM_QUIT, 0, 0);
+        }
+    });
+
+    server_thread.detach();
+
+    while (server.actual_port() == 0 && !g_should_exit) {
+        Sleep(100);
+    }
+    g_actual_port = server.actual_port() > 0 ? server.actual_port() : cfg.port;
+
+    if (!g_should_exit) {
+        if (!cfg.foreground) {
+            g_hwnd = create_hidden_window();
+            if (g_hwnd) {
+                HICON hIcon = load_icon_from_dir();
+                if (!hIcon) hIcon = load_icon_from_exe();
+                if (!hIcon) hIcon = LoadIconA(nullptr, IDI_APPLICATION);
+
+                TrayIcon tray;
+                g_tray = &tray;
+                tray.init(g_hwnd, hIcon, "SysTrace - System Monitor");
+
+                fprintf(stderr, "[SysTrace] Running in system tray. Right-click tray icon to exit.\n");
+
+                MSG msg;
+                while (!g_should_exit && GetMessage(&msg, nullptr, 0, 0) > 0) {
+                    TranslateMessage(&msg);
+                    DispatchMessage(&msg);
+                }
+
+                tray.remove();
+                g_tray = nullptr;
+                DestroyWindow(g_hwnd);
+                g_hwnd = nullptr;
+            }
+        } else {
+            while (!g_should_exit) {
+                Sleep(1000);
+            }
+        }
+    }
+
+    server.stop();
+    if (g_hwnd) PostMessage(g_hwnd, WM_QUIT, 0, 0);
 
     g_server = nullptr;
     fprintf(stderr, "[SysTrace] Stopped.\n");
